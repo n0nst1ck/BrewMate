@@ -1,0 +1,95 @@
+package com.panko.brewmate.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.panko.brewmate.data.AuthRepository // Assuming this path
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+sealed class AuthUiState {
+    data object Idle : AuthUiState() // Initial state, waiting for input
+    data object Loading : AuthUiState() // Operation in progress
+    data object Success : AuthUiState() // Operation finished successfully
+    data class Error(val message: String) : AuthUiState() // Operation failed
+}
+
+data class AuthInputState(
+    val email: String = "",
+    val password: String = "",
+    val isSignIn: Boolean = true // True for Sign In, False for Sign Up
+)
+
+class AuthViewModel(
+    private val authRepository: AuthRepository // Dependency injection
+) : ViewModel() {
+
+    // Observable State for the UI
+    private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
+    val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+
+    // Observable State for User Input
+    private val _inputState = MutableStateFlow(AuthInputState())
+    val inputState: StateFlow<AuthInputState> = _inputState.asStateFlow()
+
+    // --- State Update Functions ---
+
+    fun onEmailChange(newEmail: String) {
+        _inputState.update { it.copy(email = newEmail) }
+        // Reset state on input change
+        _uiState.update { AuthUiState.Idle }
+    }
+
+    fun onPasswordChange(newPassword: String) {
+        _inputState.update { it.copy(password = newPassword) }
+        // Reset state on input change
+        _uiState.update { AuthUiState.Idle }
+    }
+
+    fun toggleAuthMode() {
+        _inputState.update { it.copy(isSignIn = !it.isSignIn, password = "") }
+        _uiState.update { AuthUiState.Idle }
+    }
+
+    // --- Authentication Logic ---
+
+    fun authenticate() {
+        // Simple client-side validation
+        if (_inputState.value.email.isBlank() || _inputState.value.password.length < 6) {
+            _uiState.update { AuthUiState.Error("Please enter a valid email and a password (min 6 chars).") }
+            return
+        }
+
+        _uiState.update { AuthUiState.Loading } // Set loading state
+
+        viewModelScope.launch {
+            val result = if (_inputState.value.isSignIn) {
+                authRepository.signIn(
+                    _inputState.value.email,
+                    _inputState.value.password
+                )
+            } else {
+                authRepository.createUser(
+                    _inputState.value.email,
+                    _inputState.value.password
+                )
+            }
+
+            result.fold(
+                onSuccess = {
+                    _uiState.update { AuthUiState.Success }
+                },
+                onFailure = { throwable ->
+                    val message = throwable.localizedMessage ?: "Authentication failed."
+                    _uiState.update { AuthUiState.Error(message) }
+                }
+            )
+        }
+    }
+
+    fun logout() {
+        // TO DO
+    }
+}

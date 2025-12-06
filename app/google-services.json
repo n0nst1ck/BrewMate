@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1090811954373",
+    "firebase_url": "https://brewmate-a4d3b-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "brewmate-a4d3b",
+    "storage_bucket": "brewmate-a4d3b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1090811954373:android:07d4ae8e07de2ae470dcac",
+        "android_client_info": {
+          "package_name": "com.panko.brewmate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvXy8OP1p4ScRGzMv3ycxP_Bk-6chyM7M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
