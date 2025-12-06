@@ -9,9 +9,10 @@ object BrewMateDestinations {
     const val HOME_ROUTE = "home"
     const val CONFIGURE_BREW_TYPE_ROUTE = "configure_brew_type"
     const val CUSTOMIZE_BREW_ROUTE = "customize_brew"
-    const val LEVELS_ROUTE = "levels"
+    const val INVENTORY_ROUTE = "inventory"
     const val SCHEDULING_ROUTE = "scheduling"
     const val FAVORITES_ROUTE = "favorites_list"
+    const val HISTORY_ROUTE = "history"
     const val MANAGEMENT_HUB_ROUTE = "management_hub"
 }
 

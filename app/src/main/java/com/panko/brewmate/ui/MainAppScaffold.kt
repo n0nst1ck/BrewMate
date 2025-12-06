@@ -3,8 +3,9 @@ package com.panko.brewmate.ui
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.outlined.Coffee
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -32,35 +33,45 @@ import com.panko.brewmate.viewmodel.FavoritesViewModel
 import com.panko.brewmate.viewmodel.SchedulingViewModel
 import com.panko.brewmate.ui.management.ManagementHubScreen
 import com.panko.brewmate.ui.favorites.FavoritesScreen
+import com.panko.brewmate.ui.history.HistoryScreen
+import com.panko.brewmate.viewmodel.HistoryViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainAppScaffold(coffeeMakerViewModel: CoffeeMakerViewModel,
-                    schedulingViewModel: SchedulingViewModel,
-                    favoritesViewModel: FavoritesViewModel,
-                    onLogout: () -> Unit) {
+fun MainAppScaffold(
+    coffeeMakerViewModel: CoffeeMakerViewModel,
+    schedulingViewModel: SchedulingViewModel,
+    favoritesViewModel: FavoritesViewModel,
+    onLogout: () -> Unit,
+    historyViewModel: HistoryViewModel
+) {
     val navController = rememberNavController()
 
     val navItems = listOf(
+        NavItem(
+            route = BrewMateDestinations.MANAGEMENT_HUB_ROUTE,
+            icon = { Icon(Icons.Outlined.Coffee, contentDescription = "Drinks") },
+            label = "Drinks"
+        ),
+        NavItem(
+            route = BrewMateDestinations.SCHEDULING_ROUTE,
+            icon = { Icon(Icons.Filled.DateRange, contentDescription = "Schedule") },
+            label = "Schedule"
+        ),
         NavItem(
             route = BrewMateDestinations.HOME_ROUTE,
             icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
             label = "Home"
         ),
         NavItem(
-            route = BrewMateDestinations.LEVELS_ROUTE,
-            icon = { Icon(Icons.Filled.Info, contentDescription = "Levels") },
-            label = "Levels"
+            route = BrewMateDestinations.HISTORY_ROUTE,
+            icon = { Icon(Icons.Filled.History, contentDescription = "History") },
+            label = "History"
         ),
         NavItem(
-            route = BrewMateDestinations.SCHEDULING_ROUTE, // <-- NEW ITEM
-            icon = { Icon(Icons.Filled.DateRange, contentDescription = "Schedule") },
-            label = "Schedule"
-        ),
-        NavItem(
-            route = BrewMateDestinations.MANAGEMENT_HUB_ROUTE,
-            icon = { Icon(Icons.Outlined.Coffee, contentDescription = "Drinks") },
-            label = "Drinks"
+            route = BrewMateDestinations.INVENTORY_ROUTE,
+            icon = { Icon(Icons.Filled.Inventory2, contentDescription = "Inventory") },
+            label = "Inventory"
         )
     )
 
@@ -113,7 +124,7 @@ fun MainAppScaffold(coffeeMakerViewModel: CoffeeMakerViewModel,
                 HomeScreen(viewModel = coffeeMakerViewModel, navController = navController)
             }
 
-            composable(BrewMateDestinations.LEVELS_ROUTE) {
+            composable(BrewMateDestinations.INVENTORY_ROUTE) {
                 LevelsTabContent(viewModel = coffeeMakerViewModel)
             }
 
@@ -161,6 +172,13 @@ fun MainAppScaffold(coffeeMakerViewModel: CoffeeMakerViewModel,
                 FavoritesScreen(
                     viewModel = favoritesViewModel,
                     navController = navController
+                )
+            }
+
+            composable(BrewMateDestinations.HISTORY_ROUTE) {
+                HistoryScreen(
+                    historyViewModel = historyViewModel,
+                    favoritesViewModel = favoritesViewModel
                 )
             }
         }

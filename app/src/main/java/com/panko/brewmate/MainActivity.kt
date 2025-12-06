@@ -24,11 +24,14 @@ import com.panko.brewmate.data.AuthRepository
 import com.panko.brewmate.data.FavoritesRepository
 import com.panko.brewmate.data.FirebaseAuthRepository
 import com.panko.brewmate.data.FirebaseFavoritesRepository
+import com.panko.brewmate.data.FirebaseHistoryRepository
+import com.panko.brewmate.data.HistoryRepository
 import com.panko.brewmate.data.SchedulingRepository
 import com.panko.brewmate.viewmodel.AuthViewModel
 import com.panko.brewmate.ui.BrewMateApp
 import com.panko.brewmate.viewmodel.CoffeeMakerViewModel
 import com.panko.brewmate.viewmodel.FavoritesViewModel
+import com.panko.brewmate.viewmodel.HistoryViewModel
 import com.panko.brewmate.viewmodel.SchedulingViewModel
 
 
@@ -57,11 +60,19 @@ class MainActivity : ComponentActivity() {
             firestore = firestoreInstance,
             auth = authInstance
         )
+        val historyRepository: HistoryRepository = FirebaseHistoryRepository(
+            firestore = firestoreInstance,
+            auth = authInstance
+        )
         viewModelFactory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return when {
                     modelClass.isAssignableFrom(CoffeeMakerViewModel::class.java) ->
-                        CoffeeMakerViewModel(coffeeMakerRepository) as T
+                        CoffeeMakerViewModel(
+                            coffeeMakerRepository = coffeeMakerRepository,
+                            historyRepository = historyRepository,
+                            authRepository = authRepository
+                        ) as T
 
                     modelClass.isAssignableFrom(AuthViewModel::class.java) ->
                         AuthViewModel(authRepository) as T
@@ -71,6 +82,9 @@ class MainActivity : ComponentActivity() {
 
                     modelClass.isAssignableFrom(FavoritesViewModel::class.java) ->
                         FavoritesViewModel(favoritesRepository, authRepository) as T
+
+                    modelClass.isAssignableFrom(HistoryViewModel::class.java) ->
+                        HistoryViewModel(historyRepository, authRepository) as T
 
                     else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                 }
@@ -88,6 +102,7 @@ class MainActivity : ComponentActivity() {
                     val authViewModel: AuthViewModel = viewModel(factory = viewModelFactory)
                     val schedulingViewModel: SchedulingViewModel = viewModel(factory = viewModelFactory)
                     val favoritesViewModel: FavoritesViewModel = viewModel(factory = viewModelFactory)
+                    val historyViewModel: HistoryViewModel = viewModel(factory = viewModelFactory)
 
                     // 3. Call the Root Navigator
                     BrewMateApp(
@@ -95,6 +110,7 @@ class MainActivity : ComponentActivity() {
                         authViewModel = authViewModel,
                         schedulingViewModel = schedulingViewModel,
                         favoritesViewModel = favoritesViewModel,
+                        historyViewModel = historyViewModel,
                         authRepository = authRepository, // Passed for the initial login check
                         viewModelFactory = viewModelFactory // Passed to allow screens to get their ViewModels
                     )

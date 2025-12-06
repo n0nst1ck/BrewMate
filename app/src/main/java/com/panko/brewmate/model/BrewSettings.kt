@@ -1,5 +1,4 @@
 package com.panko.brewmate.model
-import com.panko.brewmate.model.SyrupType
 
 data class BrewSettings(
     val strength: String = "Μedium",
@@ -18,7 +17,13 @@ data class BrewSettings(
             strength = "Medium",
             coffeeShotSize = CoffeeShotSize.SINGLE_SHOT,
             milkType = MilkType.NONE,
-            temperature = Temperature.HOT
+            temperature = Temperature.HOT,
+            isTea = false,
+            steepTime = 0,
+            isChocolate = false,
+            syrupType = SyrupType.NONE,
+            syrupPumps = 0,
+            sugarAmount = 0
         )
     }
 }

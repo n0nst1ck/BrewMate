@@ -13,12 +13,14 @@ import com.panko.brewmate.viewmodel.AuthViewModel
 import com.panko.brewmate.viewmodel.CoffeeMakerViewModel
 import com.panko.brewmate.util.LocalViewModelFactory
 import com.panko.brewmate.viewmodel.FavoritesViewModel
+import com.panko.brewmate.viewmodel.HistoryViewModel
 import com.panko.brewmate.viewmodel.SchedulingViewModel
 @Composable
 fun BrewMateApp(
     coffeeMakerViewModel: CoffeeMakerViewModel,
     schedulingViewModel: SchedulingViewModel,
     favoritesViewModel: FavoritesViewModel,
+    historyViewModel: HistoryViewModel,
     authViewModel: AuthViewModel,
     authRepository: AuthRepository,
     viewModelFactory: ViewModelProvider.Factory
@@ -59,6 +61,7 @@ fun BrewMateApp(
                     coffeeMakerViewModel = coffeeMakerViewModel,
                     schedulingViewModel = schedulingViewModel,
                     favoritesViewModel = favoritesViewModel,
+                    historyViewModel = historyViewModel,
                     onLogout = {
                         authViewModel.logout() // Clear Firebase session
                         // Navigate back to Auth screen and clear history
