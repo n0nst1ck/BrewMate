@@ -6,15 +6,15 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.outlined.Coffee
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -33,10 +33,12 @@ import com.panko.brewmate.ui.schedule.SchedulingScreen
 import com.panko.brewmate.viewmodel.CoffeeMakerViewModel
 import com.panko.brewmate.viewmodel.FavoritesViewModel
 import com.panko.brewmate.viewmodel.SchedulingViewModel
-import com.panko.brewmate.ui.management.ManagementHubScreen
 import com.panko.brewmate.ui.favorites.FavoritesScreen
 import com.panko.brewmate.ui.history.HistoryScreen
+import com.panko.brewmate.ui.settings.SettingsScreen
+import com.panko.brewmate.viewmodel.AuthViewModel
 import com.panko.brewmate.viewmodel.HistoryViewModel
+import com.panko.brewmate.viewmodel.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +46,8 @@ fun MainAppScaffold(
     coffeeMakerViewModel: CoffeeMakerViewModel,
     schedulingViewModel: SchedulingViewModel,
     favoritesViewModel: FavoritesViewModel,
+    themeViewModel: ThemeViewModel,
+    authViewModel: AuthViewModel,
     onLogout: () -> Unit,
     historyViewModel: HistoryViewModel
 ) {
@@ -82,8 +86,11 @@ fun MainAppScaffold(
             TopAppBar(
                 title = { Text("BrewMate") },
                 actions = {
-                    TextButton(onClick = onLogout) {
-                        Text("Logout")
+                    IconButton(
+                        onClick = { navController.navigate(BrewMateDestinations.SETTINGS_ROUTE) }
+                    ) {
+                        // Import androidx.compose.material.icons.filled.Settings
+                        Icon(Icons.Filled.Settings, contentDescription = "Settings")
                     }
                 }
             )
@@ -138,6 +145,22 @@ fun MainAppScaffold(
                     schedulingViewModel = schedulingViewModel,
                     favoritesViewModel = favoritesViewModel,
                     navController = navController
+                )
+            }
+
+            composable(BrewMateDestinations.SETTINGS_ROUTE) {
+                SettingsScreen(
+                    navController = navController,
+                    themeViewModel = themeViewModel,
+                    authViewModel = authViewModel,
+                    onLogout = {
+                        authViewModel.logout()
+                     // Clear Firebase session
+                            // Navigate back to Auth screen and clear history
+                            navController.navigate(BrewMateDestinations.AUTH_ROUTE) {
+                                popUpTo(navController.graph.id) { inclusive = true }
+                            }
+                    }
                 )
             }
 

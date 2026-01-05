@@ -14,6 +14,7 @@ object BrewMateDestinations {
     const val FAVORITES_ROUTE = "favorites_list"
     const val HISTORY_ROUTE = "history"
     const val MANAGEMENT_HUB_ROUTE = "management_hub"
+    const val SETTINGS_ROUTE = "settings"
 }
 
 // Data class for navigation items (unchanged)

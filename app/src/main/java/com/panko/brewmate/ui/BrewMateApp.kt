@@ -15,6 +15,8 @@ import com.panko.brewmate.util.LocalViewModelFactory
 import com.panko.brewmate.viewmodel.FavoritesViewModel
 import com.panko.brewmate.viewmodel.HistoryViewModel
 import com.panko.brewmate.viewmodel.SchedulingViewModel
+import com.panko.brewmate.viewmodel.ThemeViewModel
+
 @Composable
 fun BrewMateApp(
     coffeeMakerViewModel: CoffeeMakerViewModel,
@@ -23,7 +25,8 @@ fun BrewMateApp(
     historyViewModel: HistoryViewModel,
     authViewModel: AuthViewModel,
     authRepository: AuthRepository,
-    viewModelFactory: ViewModelProvider.Factory
+    viewModelFactory: ViewModelProvider.Factory,
+    themeViewModel: ThemeViewModel
 ) {
     // 1. Initial State Check
     val isLoggedIn = authRepository.getCurrentUserId() != null
@@ -61,14 +64,16 @@ fun BrewMateApp(
                     coffeeMakerViewModel = coffeeMakerViewModel,
                     schedulingViewModel = schedulingViewModel,
                     favoritesViewModel = favoritesViewModel,
-                    historyViewModel = historyViewModel,
+                    themeViewModel = themeViewModel,
+                    authViewModel = authViewModel,
                     onLogout = {
                         authViewModel.logout() // Clear Firebase session
                         // Navigate back to Auth screen and clear history
                         navController.navigate(BrewMateDestinations.AUTH_ROUTE) {
                             popUpTo(navController.graph.id) { inclusive = true }
                         }
-                    }
+                    },
+                    historyViewModel = historyViewModel
                 )
             }
         }

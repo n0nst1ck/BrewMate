@@ -5,6 +5,8 @@ import com.panko.brewmate.data.FirebaseSchedulingRepository
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
@@ -13,8 +15,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.panko.brewmate.data.AndroidAlarmScheduler
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 
+import com.panko.brewmate.data.AndroidAlarmScheduler
 import com.panko.brewmate.data.CoffeeMakerRepository
 import com.panko.brewmate.data.SimulatedCoffeeMaker
 import com.panko.brewmate.ui.theme.BrewMateTheme
@@ -33,6 +38,7 @@ import com.panko.brewmate.viewmodel.CoffeeMakerViewModel
 import com.panko.brewmate.viewmodel.FavoritesViewModel
 import com.panko.brewmate.viewmodel.HistoryViewModel
 import com.panko.brewmate.viewmodel.SchedulingViewModel
+import com.panko.brewmate.viewmodel.ThemeViewModel
 
 
 class MainActivity : ComponentActivity() {
@@ -91,8 +97,16 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        val themeViewModel: ThemeViewModel by viewModels()
+
         setContent {
-            BrewMateTheme {
+            val systemInDark = isSystemInDarkTheme()
+            LaunchedEffect(Unit) {
+                themeViewModel.setTheme(systemInDark)
+            }
+            val isDark by remember { themeViewModel.isDarkTheme }
+
+            BrewMateTheme(darkTheme = isDark) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -111,6 +125,7 @@ class MainActivity : ComponentActivity() {
                         schedulingViewModel = schedulingViewModel,
                         favoritesViewModel = favoritesViewModel,
                         historyViewModel = historyViewModel,
+                        themeViewModel = themeViewModel,
                         authRepository = authRepository, // Passed for the initial login check
                         viewModelFactory = viewModelFactory // Passed to allow screens to get their ViewModels
                     )
