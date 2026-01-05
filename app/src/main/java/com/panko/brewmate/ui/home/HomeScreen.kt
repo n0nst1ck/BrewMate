@@ -16,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-//import com.panko.brewmate.ui.brew.BrewDashboardContent
 import com.panko.brewmate.navigation.BrewMateDestinations
 import com.panko.brewmate.viewmodel.CoffeeMakerViewModel
 
@@ -35,10 +34,10 @@ fun HomeScreen(viewModel: CoffeeMakerViewModel, navController: NavController) {
             coffeeMakerStatus = coffeeMakerState.status,
             coffeeMakerMessage = coffeeMakerState.detailedMessage,
             isPoweredOn = coffeeMakerState.isPoweredOn,
-            canStartBrew = coffeeMakerState.canStartBrew,
+            canBrewDrink = coffeeMakerState.canBrewDrink,
             canStopBrew = coffeeMakerState.canStopBrew,
             onTogglePower = viewModel::togglePower,
-            onStartBrewClicked = { navController.navigate(BrewMateDestinations.CONFIGURE_BREW_TYPE_ROUTE) },
+            onBrewDrinkClicked = { navController.navigate(BrewMateDestinations.CONFIGURE_BREW_TYPE_ROUTE) },
             onStopBrew = viewModel::stopBrew
         )
     }
@@ -49,10 +48,10 @@ fun BrewDashboardContent(
     coffeeMakerStatus: String,
     coffeeMakerMessage: String,
     isPoweredOn: Boolean,
-    canStartBrew: Boolean,
+    canBrewDrink: Boolean,
     canStopBrew: Boolean,
     onTogglePower: () -> Unit,
-    onStartBrewClicked: () -> Unit,
+    onBrewDrinkClicked: () -> Unit,
     onStopBrew: () -> Unit
 ) {
     val powerButtonText = if (isPoweredOn) "Turn Off" else "Turn On"
@@ -79,11 +78,11 @@ fun BrewDashboardContent(
             Text(powerButtonText)
         }
         Button(
-            onClick = onStartBrewClicked,
-            enabled = isPoweredOn && canStartBrew,
+            onClick = onBrewDrinkClicked,
+            enabled = isPoweredOn && canBrewDrink,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Start Brew")
+            Text("Brew Drink")
         }
         Button(
             onClick = onStopBrew,

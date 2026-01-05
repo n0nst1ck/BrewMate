@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -98,7 +97,7 @@ fun HistoryItemCard(
                 Text(text = item.drinkName, style = MaterialTheme.typography.titleLarge)
                 Text(text = dateString, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
-                    text = "${item.settings.strength} | ${item.settings.milkType.name.lowercase()}",
+                    text = "${item.settings.strength} | ${item.settings.milkStyle.name.lowercase()}",
                     style = MaterialTheme.typography.bodySmall
                 )
             }

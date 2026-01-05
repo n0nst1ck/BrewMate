@@ -97,7 +97,7 @@ fun FavoriteDrinkCard(drink: FavoriteDrink, viewModel: FavoritesViewModel) {
                     style = MaterialTheme.typography.titleLarge
                 )
                 Text(
-                    text = "Type: ${drink.settings.syrupType.displayName} / ${drink.settings.milkType.name.lowercase()}",
+                    text = "Type: ${drink.settings.syrupType.displayName} / ${drink.settings.milkStyle.name.lowercase()}",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

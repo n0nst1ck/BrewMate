@@ -1,29 +1,32 @@
 package com.panko.brewmate.model
 
 data class BrewSettings(
-    val strength: String = "Μedium",
+    // Base Identity
+    val baseType: BaseDrinkType = BaseDrinkType.COFFEE,
+
+    // Coffee Specifics
+    val strength: String = "Medium",
     val coffeeShotSize: CoffeeShotSize = CoffeeShotSize.SINGLE_SHOT,
-    val milkType: MilkType = MilkType.NONE,
+    val isDecaf: Boolean = false,
+
+    // Tea Specifics
+    val teaType: TeaType = TeaType.BLACK,
+    val steepTime: Long = 180, // Default 3 mins (in seconds)
+
+    // Common Additions
+    val milkStyle: MilkStyle = MilkStyle.NONE,
+    val milkBase: MilkBase = MilkBase.WHOLE,
     val temperature: Temperature = Temperature.HOT,
-    val isTea: Boolean = false,
-    val steepTime: Long = 0, // time in ms for tea
-    val isChocolate: Boolean = false,
+
+    // Syrups
     val syrupType: SyrupType = SyrupType.NONE,
     val syrupPumps: Int = 0,
-    val sugarAmount: Int = 0
+
+    // Sugars
+    val sugarType: SugarType = SugarType.NONE, // NEW: Type of sugar
+    val sugarAmount: Int = 0 // Teaspoons/Packets
 ) {
     companion object {
-        val DEFAULT = BrewSettings(
-            strength = "Medium",
-            coffeeShotSize = CoffeeShotSize.SINGLE_SHOT,
-            milkType = MilkType.NONE,
-            temperature = Temperature.HOT,
-            isTea = false,
-            steepTime = 0,
-            isChocolate = false,
-            syrupType = SyrupType.NONE,
-            syrupPumps = 0,
-            sugarAmount = 0
-        )
+        val DEFAULT = BrewSettings()
     }
 }

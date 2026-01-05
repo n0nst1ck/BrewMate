@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.outlined.Coffee
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -27,6 +28,7 @@ import com.panko.brewmate.ui.home.HomeScreen
 import com.panko.brewmate.ui.levels.LevelsTabContent
 import com.panko.brewmate.navigation.BrewMateDestinations
 import com.panko.brewmate.navigation.NavItem
+import com.panko.brewmate.ui.brew.CustomizeBrewScreen
 import com.panko.brewmate.ui.schedule.SchedulingScreen
 import com.panko.brewmate.viewmodel.CoffeeMakerViewModel
 import com.panko.brewmate.viewmodel.FavoritesViewModel
@@ -49,9 +51,9 @@ fun MainAppScaffold(
 
     val navItems = listOf(
         NavItem(
-            route = BrewMateDestinations.MANAGEMENT_HUB_ROUTE,
-            icon = { Icon(Icons.Outlined.Coffee, contentDescription = "Drinks") },
-            label = "Drinks"
+            route = BrewMateDestinations.FAVORITES_ROUTE,
+            icon = { Icon(Icons.Filled.Favorite, contentDescription = "Favorites") },
+            label = "Favorites"
         ),
         NavItem(
             route = BrewMateDestinations.SCHEDULING_ROUTE,
@@ -141,10 +143,10 @@ fun MainAppScaffold(
 
             // 2. THE NEW "DRINKS" MANAGEMENT HUB TAB
             // This is the new entry point for Customization, Presets, and Favorites.
-            composable(BrewMateDestinations.MANAGEMENT_HUB_ROUTE) {
-                ManagementHubScreen(
+            composable(BrewMateDestinations.FAVORITES_ROUTE) {
+                FavoritesScreen(
                     navController = navController,
-                    favoritesViewModel = favoritesViewModel // Only need favorites VM here for simplicity
+                    viewModel = favoritesViewModel
                 )
             }
 
@@ -160,17 +162,9 @@ fun MainAppScaffold(
             }
 
             composable(BrewMateDestinations.CUSTOMIZE_BREW_ROUTE) {
-                ConfigureBrewTypeScreen(
+                CustomizeBrewScreen(
                     viewModel = coffeeMakerViewModel,
                     favoritesViewModel = favoritesViewModel,
-                    navController = navController
-                )
-            }
-
-            // NEW: The screen for listing and managing favorites (accessed from ManagementHubScreen)
-            composable(BrewMateDestinations.FAVORITES_ROUTE) {
-                FavoritesScreen(
-                    viewModel = favoritesViewModel,
                     navController = navController
                 )
             }

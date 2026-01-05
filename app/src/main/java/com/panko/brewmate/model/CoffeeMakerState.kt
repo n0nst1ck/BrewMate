@@ -5,7 +5,7 @@ data class CoffeeMakerState(
     val status: String, // e.g., "Off", "Ready", "Brewing...", "ERROR_WATER_LOW"
     val primaryMessage: String,
     val detailedMessage: String,
-    val canStartBrew: Boolean,
+    val canBrewDrink: Boolean,
     val canStopBrew: Boolean,
     val hasMaintenanceAlert: Boolean // New flag for UI convenience
 )

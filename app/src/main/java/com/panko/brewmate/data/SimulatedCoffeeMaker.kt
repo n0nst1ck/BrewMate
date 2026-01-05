@@ -4,7 +4,7 @@ import com.panko.brewmate.model.BrewSettings
 import com.panko.brewmate.model.CoffeeMakerState
 import com.panko.brewmate.model.DrinkType
 import com.panko.brewmate.model.CoffeeShotSize
-import com.panko.brewmate.model.MilkType
+import com.panko.brewmate.model.MilkStyle
 import com.panko.brewmate.model.Temperature
 import com.panko.brewmate.util.Scheduler // Import the Scheduler interface
 import kotlinx.coroutines.CoroutineScope
@@ -28,7 +28,7 @@ class SimulatedCoffeeMaker(
         status = "Off",
         primaryMessage = "Press power button.",
         detailedMessage = "",
-        canStartBrew = false,
+        canBrewDrink = false,
         canStopBrew = false,
         hasMaintenanceAlert = false // Add this to the state
     ))
@@ -52,7 +52,7 @@ class SimulatedCoffeeMaker(
     private val _customBrewSettings = MutableStateFlow(BrewSettings(
         strength = DrinkType.ESPRESSO.defaultStrength,
         coffeeShotSize = DrinkType.ESPRESSO.defaultCoffeeShotSize,
-        milkType = DrinkType.ESPRESSO.defaultMilkType,
+        milkStyle = DrinkType.ESPRESSO.defaultMilkStyle,
         temperature = DrinkType.ESPRESSO.defaultTemperature
     ))
     override val customBrewSettings: StateFlow<BrewSettings> = _customBrewSettings.asStateFlow()
@@ -68,7 +68,7 @@ class SimulatedCoffeeMaker(
                 isPoweredOn = newIsPoweredOn,
                 status = if (newIsPoweredOn) "Ready" else "Off",
                 detailedMessage = if (newIsPoweredOn) "Ready to brew" else "Press power button",
-                canStartBrew = newIsPoweredOn // Can start if turning on
+                canBrewDrink = newIsPoweredOn // Can start if turning on
             )
         }
         if (!_coffeeMakerState.value.isPoweredOn) {
@@ -98,14 +98,14 @@ class SimulatedCoffeeMaker(
             val effectiveSettings = customSettings ?: BrewSettings(
                 strength = drinkType.defaultStrength,
                 coffeeShotSize = drinkType.defaultCoffeeShotSize,
-                milkType = drinkType.defaultMilkType,
+                milkStyle = drinkType.defaultMilkStyle,
                 temperature = drinkType.defaultTemperature
             )
 
             // Simulate resource checks and consumption
             val beansToConsume = 10 // Simplified consumption
             val waterToConsume = 15
-            val milkToConsume = if (effectiveSettings.milkType != MilkType.NONE) 10 else 0
+            val milkToConsume = if (effectiveSettings.milkStyle != MilkStyle.NONE) 10 else 0
 
             if (_beansLevel.value < beansToConsume) {
                 _coffeeMakerState.update { it.copy(status = "ERROR_BEANS_LOW", detailedMessage = "ALERT: Add beans!", hasMaintenanceAlert = true) }
@@ -132,7 +132,7 @@ class SimulatedCoffeeMaker(
             _coffeeMakerState.update {
                 it.copy(
                     status = "Brewing...",
-                    canStartBrew = false,
+                    canBrewDrink = false,
                     canStopBrew = true,
                     primaryMessage = "Brewing your $displayName!", // Primary Message set here
                     detailedMessage = "Starting process..." // Initial detailed message
@@ -159,7 +159,7 @@ class SimulatedCoffeeMaker(
                     delay(3000.milliseconds)
 
                     // Simulate milk (if applicable)
-                    if (effectiveSettings.milkType != MilkType.NONE) {
+                    if (effectiveSettings.milkStyle != MilkStyle.NONE) {
                         _coffeeMakerState.update { it.copy(status = "Preparing milk...", detailedMessage = "Preparing milk...") }
                         delay(2000.milliseconds)
                     }
@@ -175,10 +175,10 @@ class SimulatedCoffeeMaker(
                     _groundsBinLevel.update { (it + 10).coerceAtMost(100) } // Increase grounds
 
                     scheduler.schedule(5000) { // Display "Done" for a few seconds
-                        _coffeeMakerState.update { it.copy(status = "Ready", canStartBrew = true, detailedMessage = "Ready to brew.") }
+                        _coffeeMakerState.update { it.copy(status = "Ready", canBrewDrink = true, detailedMessage = "Ready to brew.") }
                     }
                 } catch (e: Exception) {
-                    _coffeeMakerState.update { it.copy(status = "Error", detailedMessage = "Brew failed: ${e.localizedMessage}", canStartBrew = true, canStopBrew = false) }
+                    _coffeeMakerState.update { it.copy(status = "Error", detailedMessage = "Brew failed: ${e.localizedMessage}", canBrewDrink = true, canStopBrew = false) }
                 } finally {
                     _coffeeMakerState.update { it.copy(canStopBrew = false) } // Ensure stop button is disabled
                 }
@@ -188,7 +188,7 @@ class SimulatedCoffeeMaker(
 
     override fun stopBrew() {
         brewJob?.cancel() // Cancel the brewing job
-        _coffeeMakerState.update { it.copy(status = "Stopped", canStopBrew = false, canStartBrew = true, detailedMessage = "Brew stopped.") }
+        _coffeeMakerState.update { it.copy(status = "Stopped", canStopBrew = false, canBrewDrink = true, detailedMessage = "Brew stopped.") }
     }
 
     override fun setSelectedCoffeeType(type: DrinkType) {
@@ -199,7 +199,7 @@ class SimulatedCoffeeMaker(
                 it.copy(
                     strength = type.defaultStrength,
                     coffeeShotSize = type.defaultCoffeeShotSize,
-                    milkType = type.defaultMilkType,
+                    milkStyle = type.defaultMilkStyle,
                     temperature = type.defaultTemperature
                 )
             }
@@ -216,8 +216,8 @@ class SimulatedCoffeeMaker(
         _selectedDrinkType.value = DrinkType.CUSTOM
     }
 
-    override fun setCustomMilkType(milkType: MilkType) {
-        _customBrewSettings.update { it.copy(milkType = milkType) }
+    override fun setCustomMilkType(milkStyle: MilkStyle) {
+        _customBrewSettings.update { it.copy(milkStyle = milkStyle) }
         _selectedDrinkType.value = DrinkType.CUSTOM
     }
 
@@ -282,8 +282,12 @@ class SimulatedCoffeeMaker(
             it.copy(
                 status = "Ready",
                 detailedMessage = "Ready to brew your saved drink: $drinkName!",
-                canStartBrew = true
+                canBrewDrink = true
             )
         }
+    }
+
+    override fun updateBrewSettings(settings: BrewSettings) {
+        _customBrewSettings.value = settings
     }
 }

@@ -4,7 +4,7 @@ import com.panko.brewmate.model.DrinkType
 import kotlinx.coroutines.flow.StateFlow
 import com.panko.brewmate.model.CoffeeMakerState
 import com.panko.brewmate.model.CoffeeShotSize
-import com.panko.brewmate.model.MilkType
+import com.panko.brewmate.model.MilkStyle
 import com.panko.brewmate.model.Temperature
 import com.panko.brewmate.model.BrewSettings
 
@@ -30,7 +30,7 @@ interface CoffeeMakerRepository {
     fun setSelectedCoffeeType(type: DrinkType) // To set the main coffee type (e.g., Espresso, Latte)
     fun setCustomStrength(strength: String)
     fun setCustomCoffeeShotSize(size: CoffeeShotSize)
-    fun setCustomMilkType(milkType: MilkType)
+    fun setCustomMilkType(milkStyle: MilkStyle)
     fun setCustomTemperature(temperature: Temperature)
     fun addBeans()
     fun addWater()
@@ -38,4 +38,5 @@ interface CoffeeMakerRepository {
     fun emptyGroundsBin()
     fun clearMaintenanceAlert()
     fun setBrewSettingsFromFavorite(settings: BrewSettings, drinkName: String)
+    fun updateBrewSettings(settings: BrewSettings)
 }
