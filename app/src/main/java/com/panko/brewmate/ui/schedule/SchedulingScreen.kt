@@ -27,6 +27,7 @@ import com.panko.brewmate.viewmodel.FavoritesViewModel
 import com.panko.brewmate.viewmodel.SchedulingViewModel
 import java.time.DayOfWeek
 import java.util.Locale
+import java.time.format.TextStyle
 
 @Composable
 fun RecurrenceSelector(
@@ -294,10 +295,15 @@ fun BrewScheduleCard(schedule: ScheduledBrew, onDelete: () -> Unit) {
                 Text(schedule.drinkName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
 
                 if (schedule.isRecurrent && schedule.recurrenceDays.isNotEmpty()) {
-                    val daysText = schedule.recurrenceDays.joinToString(" ") { it.name.take(1) }
+                    val daysText = schedule.recurrenceDays
+                        .sorted() // Keeps them in order (Mon -> Sun)
+                        .joinToString(", ") { day ->
+                            day.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+                        }
+
                     Text(daysText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
-                    Text("Ready to brew", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    Text("Enjoy your drink!", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 }
             }
 

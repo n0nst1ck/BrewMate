@@ -1,6 +1,7 @@
 package com.panko.brewmate.model
 
 import android.provider.CalendarContract
+import com.google.firebase.firestore.PropertyName
 import java.time.DayOfWeek
 import java.util.UUID
 
@@ -11,7 +12,8 @@ data class ScheduledBrew(
     val drinkName: String = "Coffee",
 
     // Recurrence
-    val isRecurrent: Boolean = false,
+    @get:PropertyName("isRecurrent") @set:PropertyName("isRecurrent")
+    var isRecurrent: Boolean = false,
 
     // Used when isRecurrent false
     val targetDateTimeMillis: Long? = null,
