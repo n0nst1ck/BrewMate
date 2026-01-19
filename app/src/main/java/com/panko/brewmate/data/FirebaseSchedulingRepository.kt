@@ -2,6 +2,7 @@
 
 package com.panko.brewmate.data
 
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
@@ -34,13 +35,34 @@ class FirebaseSchedulingRepository(
 
     // --- Implementation of SchedulingRepository methods ---
 
-    override suspend fun scheduleBrew(brew: ScheduledBrew): Result<Unit> {
-        return runCatching {
-            // Saves the schedule object to Firestore
-            getScheduleCollection().document(brew.id).set(brew).await()
-            // Sets the actual system alarm
-            systemScheduler.schedule(brew)
-            Unit // Return success
+    // In data/FirebaseSchedulingRepository.kt
+
+    override suspend fun scheduleBrew(brew: ScheduledBrew): Result<Boolean> {
+        return try {
+            // 1. ⚡ ACTION: Set the Android Alarm IMMEDIATELY
+            // (We do this first so it works even if offline)
+            val alarmSet = systemScheduler.schedule(brew)
+
+            if (alarmSet) {
+                Log.d("DEBUG_BREW", "✅ ALARM SET on Phone (Offline Mode Ready)")
+            } else {
+                Log.e("DEBUG_BREW", "❌ ALARM FAILED to set on Phone")
+            }
+
+            // 2. ☁️ ACTION: Save to Cloud
+            // Even if this fails or hangs due to bad internet, the alarm is already set!
+            firestore.collection("users")
+                .document(brew.userID)
+                .collection("schedules")
+                .document(brew.id)
+                .set(brew)
+                .await()
+
+            Result.success(true)
+        } catch (e: Exception) {
+            // Log the network error, but the alarm is still set locally!
+            Log.e("DEBUG_BREW", "⚠️ Saved to local alarm, but Cloud Sync failed", e)
+            Result.failure(e)
         }
     }
 

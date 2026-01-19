@@ -4,7 +4,7 @@ import com.panko.brewmate.model.ScheduledBrew
 import kotlinx.coroutines.flow.Flow
 
 interface SchedulingRepository {
-    suspend fun scheduleBrew(scheduledBrew: ScheduledBrew): Result<Unit>
+    suspend fun scheduleBrew(scheduledBrew: ScheduledBrew): Result<Boolean>
 
     fun getScheduledBrews(userId: String): Flow<List<ScheduledBrew>>
 

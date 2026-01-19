@@ -56,11 +56,11 @@ class MainActivity : ComponentActivity() {
         authRepository = FirebaseAuthRepository() // Concrete Firebase instance
         val authInstance = FirebaseAuth.getInstance()
         val firestoreInstance: FirebaseFirestore = FirebaseFirestore.getInstance()
-        val systemScheduler: SystemSchedulerInterface = AndroidAlarmScheduler(applicationContext)
+        val androidAlarmScheduler = AndroidAlarmScheduler(applicationContext)
         val schedulingRepository: SchedulingRepository = FirebaseSchedulingRepository(
             firestore = firestoreInstance,
             auth = authInstance,
-            systemScheduler = systemScheduler
+            systemScheduler = androidAlarmScheduler
         )
         val favoritesRepository: FavoritesRepository = FirebaseFavoritesRepository(
             firestore = firestoreInstance,
