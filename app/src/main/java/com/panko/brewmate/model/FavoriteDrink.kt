@@ -1,11 +1,10 @@
-// In model/FavoriteDrink.kt
 package com.panko.brewmate.model
 
 import java.util.UUID
 
 data class FavoriteDrink(
-    val id: String = UUID.randomUUID().toString(), // Firestore document ID
+    val id: String = UUID.randomUUID().toString(),
     val userId: String = "",
     val name: String = "",
-    val settings: BrewSettings = BrewSettings.DEFAULT // The full details of the drink
+    val settings: BrewSettings = BrewSettings.DEFAULT
 )

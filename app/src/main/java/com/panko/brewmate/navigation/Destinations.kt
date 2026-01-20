@@ -2,6 +2,7 @@ package com.panko.brewmate.navigation
 
 import androidx.compose.runtime.Composable
 
+// Used to define the navigation routes
 object BrewMateDestinations {
     const val AUTH_ROUTE = "auth"
     const val MAIN_APP_GRAPH = "main_app_graph"
@@ -17,7 +18,7 @@ object BrewMateDestinations {
     const val SETTINGS_ROUTE = "settings"
 }
 
-// Data class for navigation items (unchanged)
+// Data class for navigation items
 data class NavItem(
     val route: String,
     val icon: @Composable () -> Unit,

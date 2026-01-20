@@ -1,4 +1,3 @@
-// File: ui/brew/ConfigureBrewTypeScreen.kt
 package com.panko.brewmate.ui.brew
 
 import androidx.compose.foundation.layout.*
@@ -36,7 +35,7 @@ fun ConfigureBrewTypeScreen(
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
-            // 1. CUSTOM BREW BUTTON
+            // Custom brew button
             item {
                 Button(
                     onClick = {
@@ -51,7 +50,7 @@ fun ConfigureBrewTypeScreen(
                 }
             }
 
-            // 2. FAVORITES LIST
+            // Favorites list
             if (favoriteDrinks.isNotEmpty()) {
                 item { Text("Favorites", style = MaterialTheme.typography.titleMedium) }
                 items(favoriteDrinks) { favorite ->
@@ -72,7 +71,7 @@ fun ConfigureBrewTypeScreen(
                 }
             }
 
-            // 3. PRESETS LIST
+            // Presets list
             item { Text("Presets", style = MaterialTheme.typography.titleMedium) }
             items(presets) { preset ->
                 ExpandableDrinkCard(

@@ -29,15 +29,14 @@ class BrewAlarmReceiver : BroadcastReceiver() {
         val userId = intent.getStringExtra("USER_ID")
         val isRecurrent = intent.getBooleanExtra("IS_RECURRENT", false)
 
-        // If it exists and is NOT repeating -> Delete it!
+        // Deletes the alarm after it rings if it's not recurrent (one time)
         if (scheduleId != null && userId != null && !isRecurrent) {
 
-            // "goAsync" tells Android: "Don't kill this signal yet, I have work to do!"
+            // goAsync so the process doesn't die before it finishes
             val pendingResult = goAsync()
 
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    Log.d("DEBUG_BREW", "🗑️ Deleting one-time alarm: $scheduleId")
                     Firebase.firestore
                         .collection("users")
                         .document(userId)
@@ -45,11 +44,8 @@ class BrewAlarmReceiver : BroadcastReceiver() {
                         .document(scheduleId)
                         .delete()
                         .await()
-                    Log.d("DEBUG_BREW", "✅ Deleted successfully.")
                 } catch (e: Exception) {
-                    Log.e("DEBUG_BREW", "⚠️ Failed to auto-delete", e)
                 } finally {
-                    // MUST call this to let the receiver finish
                     pendingResult.finish()
                 }
             }
@@ -61,12 +57,11 @@ class BrewAlarmReceiver : BroadcastReceiver() {
         val channelId = "brew_alarm_channel"
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // Create Channel (Android 8+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
                 "Scheduled Brews",
-                NotificationManager.IMPORTANCE_HIGH // High Priority is MUST for popups
+                NotificationManager.IMPORTANCE_HIGH // High Priority is necessary to ensure it rings
             ).apply {
                 description = "Notifications for scheduled coffee"
             }
@@ -81,7 +76,7 @@ class BrewAlarmReceiver : BroadcastReceiver() {
 
         // Build Notification using a SYSTEM icon to be safe
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm) // <--- Safe System Icon
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("BrewMate Ready!")
             .setContentText("Time to brew your $drinkName.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -91,6 +86,5 @@ class BrewAlarmReceiver : BroadcastReceiver() {
             .build()
 
         notificationManager.notify(System.currentTimeMillis().toInt(), notification)
-        Log.d("DEBUG_BREW", "🔔 Notification posted to system tray")
     }
 }

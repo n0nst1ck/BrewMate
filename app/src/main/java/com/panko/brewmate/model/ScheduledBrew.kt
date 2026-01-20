@@ -12,6 +12,8 @@ data class ScheduledBrew(
     val drinkName: String = "Coffee",
 
     // Recurrence
+    // The line underneath was necessary because firebase assumes java grammar rules and turns
+    // the isRecurrent field into recurrent and then the getter wouldn't find isRecurrent
     @get:PropertyName("isRecurrent") @set:PropertyName("isRecurrent")
     var isRecurrent: Boolean = false,
 

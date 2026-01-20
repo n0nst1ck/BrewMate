@@ -83,7 +83,7 @@ enum class DrinkType(
         isTea = false,
         isChocolate = false,
         displayName = "Custom Coffee",
-        defaultStrength = "Medium", // These defaults will be overwritten by actual custom selections
+        defaultStrength = "Medium",
         defaultCoffeeShotSize = CoffeeShotSize.SINGLE_SHOT,
         defaultMilkStyle = MilkStyle.NONE,
         defaultTemperature = Temperature.HOT,

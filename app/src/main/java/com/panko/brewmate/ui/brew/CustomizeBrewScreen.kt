@@ -38,12 +38,12 @@ fun CustomizeBrewScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
-            .verticalScroll(rememberScrollState()), // Make it scrollable!
+            .verticalScroll(rememberScrollState()), // Makes it scrollable
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text("Design Your Drink", style = MaterialTheme.typography.headlineMedium)
 
-        // --- 1. BASE DRINK SELECTOR ---
+        // Base Drink Selection
         Row(modifier = Modifier.fillMaxWidth()) {
             BaseDrinkType.entries.forEach { type ->
                 val isSelected = customSettings.baseType == type
@@ -61,7 +61,7 @@ fun CustomizeBrewScreen(
 
         Divider()
 
-        // --- 2. DYNAMIC SECTIONS ---
+        // Dynamic Sections (depends on base type, like coffee or tea, or whether it has milk or not)
 
         when (customSettings.baseType) {
             BaseDrinkType.COFFEE -> {
@@ -124,16 +124,16 @@ fun CustomizeBrewScreen(
             BaseDrinkType.CHOCOLATE -> {
                 Text("Chocolate Settings", style = MaterialTheme.typography.titleMedium)
                 Text("Richness: Maximum", style = MaterialTheme.typography.bodyMedium)
-                // Add specific chocolate settings here if needed
+                // TO DO: add specific chocolate settings here
             }
         }
 
         Divider()
 
-        // --- MILK SECTION ---
+        // Milk Section
         Text("Milk Customization", style = MaterialTheme.typography.titleMedium)
 
-        // 1. Milk Base (The Ingredient)
+        // Milk base
         SimpleDropdown(
             label = "Milk Type",
             currentValue = customSettings.milkBase.displayName,
@@ -146,8 +146,8 @@ fun CustomizeBrewScreen(
             }
         )
 
-        // 2. Milk Style (Only show if Milk Base is NOT None)
-        if (customSettings.milkBase != MilkBase.NONE) { // <--- DYNAMIC VISIBILITY
+        // Milk style (Only show if Milk Base is NOT None)
+        if (customSettings.milkBase != MilkBase.NONE) { // Dynamic Visibility
             Spacer(modifier = Modifier.height(8.dp))
             SimpleDropdown(
                 label = "Preparation Style",
@@ -162,7 +162,7 @@ fun CustomizeBrewScreen(
 
         Divider()
 
-        // --- SYRUP SECTION ---
+        // Syrup section
         Text("Syrups", style = MaterialTheme.typography.titleMedium)
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -181,7 +181,7 @@ fun CustomizeBrewScreen(
             }
 
             // Pumps (Only show if Syrup is NOT None)
-            if (customSettings.syrupType != SyrupType.NONE) { // <--- DYNAMIC VISIBILITY
+            if (customSettings.syrupType != SyrupType.NONE) { // Dynamic Visibility
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     // Simple Counter UI
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -201,7 +201,7 @@ fun CustomizeBrewScreen(
         }
         Divider()
 
-        // --- SUGAR SECTION ---
+        // Sugar section
         Text("Sugar", style = MaterialTheme.typography.titleMedium)
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -252,25 +252,25 @@ fun CustomizeBrewScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- ACTION BUTTONS ---
+        // Action buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // BUTTON 1: BREW ONCE (Don't save to favorites)
+            // Button 1: Brew once without adding to favorites
             OutlinedButton(
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    // 1. Ensure the ViewModel has the latest custom settings (it should already)
+                    // Ensure the ViewModel has the latest custom settings (it should already)
                     viewModel.startBrew(DrinkType.CUSTOM, customSettings)
-                    // 2. Return Home to start machine
+                    // Return Home to start machine
                     navController.popBackStack(BrewMateDestinations.HOME_ROUTE, inclusive = false)
                 }
             ) {
                 Text("Brew Once")
             }
 
-            // BUTTON 2: SAVE & BREW (Opens Dialog)
+            // Button 2: Save to favorites and brew
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = { showSaveDialog.value = true }
@@ -280,7 +280,7 @@ fun CustomizeBrewScreen(
         }
     }
 
-    // --- SAVE DIALOG ---
+    // Save Favorite Dialog
     if (showSaveDialog.value) {
         SaveFavoriteDialog(
             settings = customSettings,
@@ -295,7 +295,7 @@ fun CustomizeBrewScreen(
     }
 }
 
-// --- HELPER COMPOSABLES ---
+// Helper composables (dropdowns and such)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
