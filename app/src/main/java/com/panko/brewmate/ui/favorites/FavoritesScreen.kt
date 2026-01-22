@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Coffee
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -12,66 +14,100 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.panko.brewmate.model.DrinkType
 import com.panko.brewmate.model.FavoriteDrink
+import com.panko.brewmate.navigation.BrewMateDestinations
+import com.panko.brewmate.viewmodel.CoffeeMakerViewModel
 import com.panko.brewmate.viewmodel.FavoritesViewModel
 
 @Composable
 fun FavoritesScreen(
     viewModel: FavoritesViewModel,
+    coffeeMakerViewModel: CoffeeMakerViewModel, // 👈 Added this for brewing!
     navController: NavController
 ) {
     // Collect the real-time stream of favorites from Firestore
     val favoriteDrinks by viewModel.favoriteDrinks.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Your Saved Drinks (${favoriteDrinks.size})",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+    // Scaffold allows us to easily add the Floating Action Button (FAB)
+    Scaffold(
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = {
+                    // Navigate to the "Designer Mode" of the builder
+                    navController.navigate(BrewMateDestinations.CREATE_FAVORITE_ROUTE)
+                },
+                icon = { Icon(Icons.Default.Add, contentDescription = "Create New") },
+                text = { Text("New Recipe") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+    ) { paddingValues ->
 
-        if (favoriteDrinks.isEmpty()) {
-            // 🚨 FIX: Centered Empty State UI 🚨
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "My Favorite Drinks",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
 
-            // Use a separate Column that takes up all remaining space
-            Column(
-                modifier = Modifier.fillMaxSize(), // Take up all available space
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center // Center vertically
-            ) {
-                Icon(
-                    Icons.Outlined.Coffee, // You may need to import this or use Icons.Filled.Restaurant
-                    contentDescription = "Empty Favorites",
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.outline
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "No Recipes Saved Yet!",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Go to the 'Drinks' tab to customize a brew and save it.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        } else {
-            // --- Non-Empty List ---
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(favoriteDrinks, key = { it.id }) { drink ->
-                    FavoriteDrinkCard(drink, viewModel)
+            if (favoriteDrinks.isEmpty()) {
+                // --- Empty State ---
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.Coffee,
+                        contentDescription = "Empty Favorites",
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.outline
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No Recipes Saved Yet!",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Tap the button below to invent one.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            } else {
+                // --- Non-Empty List ---
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(favoriteDrinks, key = { it.id }) { drink ->
+                        FavoriteDrinkCard(
+                            drink = drink,
+                            onDelete = { viewModel.deleteFavorite(drink.id) },
+                            onBrew = {
+                                // ⚡️ LOGIC: Start brew & go Home
+                                coffeeMakerViewModel.startBrew(DrinkType.CUSTOM, drink.settings)
+                                navController.navigate(BrewMateDestinations.HOME_ROUTE) {
+                                    popUpTo(BrewMateDestinations.HOME_ROUTE) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -80,9 +116,15 @@ fun FavoritesScreen(
 
 // Sub-composable for displaying each favorite
 @Composable
-fun FavoriteDrinkCard(drink: FavoriteDrink, viewModel: FavoritesViewModel) {
+fun FavoriteDrinkCard(
+    drink: FavoriteDrink,
+    onDelete: () -> Unit,
+    onBrew: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Row(
             modifier = Modifier
@@ -91,27 +133,54 @@ fun FavoriteDrinkCard(drink: FavoriteDrink, viewModel: FavoritesViewModel) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // Left: Text Info
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = drink.name,
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
+
+                // Construct a nice description string
+                val type = drink.settings.baseType.name.lowercase().capitalize()
+                val details = if(drink.settings.syrupType.name != "NONE")
+                    "with ${drink.settings.syrupType.displayName}" else "Classic"
+
                 Text(
-                    text = "Type: ${drink.settings.syrupType.displayName} / ${drink.settings.milkStyle.name.lowercase()}",
-                    style = MaterialTheme.typography.bodyMedium
+                    text = "$type • $details",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // Action Button - Delete
-            IconButton(onClick = { viewModel.deleteFavorite(drink.id) }) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = "Delete Favorite",
-                    tint = MaterialTheme.colorScheme.error
-                )
-            }
+            // Right: Actions (Brew & Delete)
+            Row(verticalAlignment = Alignment.CenterVertically) {
 
-            // NOTE: You would add an Edit or Set as Current button here later
+                // 1. Brew Button (Play)
+                FilledTonalButton(
+                    onClick = onBrew,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Brew")
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // 2. Delete Button
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = "Delete Favorite",
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+                    )
+                }
+            }
         }
     }
 }
+
+// Helper for capitalization
+private fun String.capitalize() = replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }

@@ -20,16 +20,19 @@ import com.panko.brewmate.model.TeaType
 import com.panko.brewmate.model.Temperature
 import com.panko.brewmate.model.SyrupType
 import com.panko.brewmate.model.SugarType
+import com.panko.brewmate.model.ChocolateType
 import com.panko.brewmate.navigation.BrewMateDestinations
 import com.panko.brewmate.viewmodel.CoffeeMakerViewModel
 import com.panko.brewmate.viewmodel.FavoritesViewModel
+import com.panko.brewmate.model.BuilderMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CustomizeBrewScreen(
+fun DrinkBuilderScreen(
     viewModel: CoffeeMakerViewModel,
     favoritesViewModel: FavoritesViewModel,
-    navController: NavController
+    navController: NavController,
+    mode: BuilderMode = BuilderMode.BREW_NOW // Default to Brew Now
 ) {
     val customSettings by viewModel.customBrewSettings.collectAsState()
     val showSaveDialog = remember { mutableStateOf(false) }
@@ -78,9 +81,12 @@ fun CustomizeBrewScreen(
                 // Shot Size
                 SimpleDropdown(
                     label = "Shot Size",
-                    currentValue = customSettings.coffeeShotSize.name,
-                    options = CoffeeShotSize.entries.map { it.name },
-                    onOptionSelected = { viewModel.setCustomCoffeeShotSize(CoffeeShotSize.valueOf(it)) }
+                    currentValue = customSettings.coffeeShotSize.displayName,
+                    options = CoffeeShotSize.entries.map { it.displayName },
+                    onOptionSelected = { selectedName ->
+                        val size = CoffeeShotSize.entries.find {it.displayName == selectedName}
+                                ?: CoffeeShotSize.SINGLE_SHOT
+                            viewModel.setCustomCoffeeShotSize(size) }
                 )
 
                 // Decaf Toggle
@@ -123,8 +129,46 @@ fun CustomizeBrewScreen(
 
             BaseDrinkType.CHOCOLATE -> {
                 Text("Chocolate Settings", style = MaterialTheme.typography.titleMedium)
-                Text("Richness: Maximum", style = MaterialTheme.typography.bodyMedium)
-                // TO DO: add specific chocolate settings here
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                    // Chocolate Type Dropdown
+                    Box(modifier = Modifier.weight(1f)) {
+                        SimpleDropdown(
+                            label = "Chocolate Type",
+                            currentValue = customSettings.chocolateType.displayName,
+                            options = ChocolateType.entries.map { it.displayName },
+                            onOptionSelected = { selectedName ->
+                                val type = ChocolateType.entries.find { it.displayName == selectedName }
+                                    ?: ChocolateType.MILK
+                                viewModel.updateBrewSettings(customSettings.copy(chocolateType = type))
+                            }
+                        )
+                    }
+
+                    // Quantity Counter (tsp)
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Minus Button
+                            IconButton(onClick = {
+                                if (customSettings.chocolateTsp > 1)
+                                    viewModel.updateBrewSettings(customSettings.copy(chocolateTsp = customSettings.chocolateTsp - 1))
+                            }) { Text("-") }
+
+                            // Bold Value Text
+                            Text(
+                                text = "${customSettings.chocolateTsp} tsp",
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            // Plus Button
+                            IconButton(onClick = {
+                                if (customSettings.chocolateTsp < 6)
+                                    viewModel.updateBrewSettings(customSettings.copy(chocolateTsp = customSettings.chocolateTsp + 1))
+                            }) { Text("+") }
+                        }
+                    }
+                }
             }
         }
 
@@ -141,7 +185,13 @@ fun CustomizeBrewScreen(
             onOptionSelected = { name ->
                 val base = MilkBase.entries.find { it.displayName == name } ?: MilkBase.WHOLE
                 // Reset style to NONE if user selects NONE for base
-                val newStyle = if (base == MilkBase.NONE) MilkStyle.NONE else customSettings.milkStyle
+                var newStyle = customSettings.milkStyle
+
+                if (base != MilkBase.NONE && newStyle == MilkStyle.NONE) {
+                    newStyle = MilkStyle.FOAMED
+                } else if (base == MilkBase.NONE) {
+                    newStyle = MilkStyle.NONE
+                }
                 viewModel.updateBrewSettings(customSettings.copy(milkBase = base, milkStyle = newStyle))
             }
         )
@@ -245,37 +295,49 @@ fun CustomizeBrewScreen(
         // Temperature
         SimpleDropdown(
             label = "Temperature",
-            currentValue = customSettings.temperature.name,
-            options = Temperature.entries.map { it.name },
-            onOptionSelected = { viewModel.setCustomTemperature(Temperature.valueOf(it)) }
+            currentValue = customSettings.temperature.displayName,
+            options = Temperature.entries.map { it.displayName },
+            onOptionSelected = { selectedName ->
+                val temperature = Temperature.entries.find {it.displayName == selectedName}
+                    ?: Temperature.HOT
+                viewModel.setCustomTemperature(temperature) }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // Action buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Button 1: Brew once without adding to favorites
-            OutlinedButton(
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    // Ensure the ViewModel has the latest custom settings (it should already)
-                    viewModel.startBrew(DrinkType.CUSTOM, customSettings)
-                    // Return Home to start machine
-                    navController.popBackStack(BrewMateDestinations.HOME_ROUTE, inclusive = false)
+        if (mode == BuilderMode.BREW_NOW) {
+            // From home screen, we want to brew coffee now
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Button 1: Just Brew
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        viewModel.startBrew(DrinkType.CUSTOM, customSettings)
+                        navController.popBackStack(BrewMateDestinations.HOME_ROUTE, inclusive = false)
+                    }
+                ) {
+                    Text("Brew Once")
                 }
-            ) {
-                Text("Brew Once")
-            }
 
-            // Button 2: Save to favorites and brew
+                // Button 2: Save & Brew
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = { showSaveDialog.value = true }
+                ) {
+                    Text("Save & Brew")
+                }
+            }
+        } else {
+            // From favorites screen, we want to save the recipe
             Button(
-                modifier = Modifier.weight(1f),
-                onClick = { showSaveDialog.value = true }
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { showSaveDialog.value = true } // Opens dialog, but we change logic below
             ) {
-                Text("Save & Brew")
+                Text("Save to Favorites")
             }
         }
     }
@@ -287,9 +349,14 @@ fun CustomizeBrewScreen(
             favoritesViewModel = favoritesViewModel,
             onDismiss = { showSaveDialog.value = false },
             onSaveComplete = {
-                // After saving, we also set it as the current recipe and go home
-                viewModel.startBrew(DrinkType.CUSTOM, customSettings)
-                navController.popBackStack(BrewMateDestinations.HOME_ROUTE, inclusive = false)
+                if (mode == BuilderMode.BREW_NOW) {
+                    // If brewing, start the machine
+                    viewModel.startBrew(DrinkType.CUSTOM, customSettings)
+                    navController.popBackStack(BrewMateDestinations.HOME_ROUTE, inclusive = false)
+                } else {
+                    // If just designing, go back to Favorites list
+                    navController.popBackStack()
+                }
             }
         )
     }

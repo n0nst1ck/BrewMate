@@ -23,12 +23,13 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.panko.brewmate.model.BuilderMode
 import com.panko.brewmate.ui.brew.ConfigureBrewTypeScreen
 import com.panko.brewmate.ui.home.HomeScreen
 import com.panko.brewmate.ui.levels.LevelsTabContent
 import com.panko.brewmate.navigation.BrewMateDestinations
 import com.panko.brewmate.navigation.NavItem
-import com.panko.brewmate.ui.brew.CustomizeBrewScreen
+import com.panko.brewmate.ui.brew.DrinkBuilderScreen
 import com.panko.brewmate.ui.schedule.SchedulingScreen
 import com.panko.brewmate.viewmodel.CoffeeMakerViewModel
 import com.panko.brewmate.viewmodel.FavoritesViewModel
@@ -169,7 +170,8 @@ fun MainAppScaffold(
             composable(BrewMateDestinations.FAVORITES_ROUTE) {
                 FavoritesScreen(
                     navController = navController,
-                    viewModel = favoritesViewModel
+                    viewModel = favoritesViewModel,
+                    coffeeMakerViewModel = coffeeMakerViewModel
                 )
             }
 
@@ -185,10 +187,20 @@ fun MainAppScaffold(
             }
 
             composable(BrewMateDestinations.CUSTOMIZE_BREW_ROUTE) {
-                CustomizeBrewScreen(
+                DrinkBuilderScreen(
                     viewModel = coffeeMakerViewModel,
                     favoritesViewModel = favoritesViewModel,
-                    navController = navController
+                    navController = navController,
+                    mode = BuilderMode.BREW_NOW
+                )
+            }
+
+            composable(BrewMateDestinations.CREATE_FAVORITE_ROUTE) {
+                DrinkBuilderScreen(
+                    viewModel = coffeeMakerViewModel,
+                    favoritesViewModel = favoritesViewModel,
+                    navController = navController,
+                    mode = BuilderMode.RECIPE_DESIGNER
                 )
             }
 

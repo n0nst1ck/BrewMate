@@ -13,9 +13,13 @@ data class BrewSettings(
     val teaType: TeaType = TeaType.BLACK,
     val steepTime: Long = 180, // Default 3 mins (in seconds)
 
+    // Chocolate Specifics
+    val chocolateType: ChocolateType = ChocolateType.MILK,
+    val chocolateTsp: Int = 1,
+
     // Common Additions
     val milkStyle: MilkStyle = MilkStyle.NONE,
-    val milkBase: MilkBase = MilkBase.WHOLE,
+    val milkBase: MilkBase = MilkBase.NONE,
     val temperature: Temperature = Temperature.HOT,
 
     // Syrups

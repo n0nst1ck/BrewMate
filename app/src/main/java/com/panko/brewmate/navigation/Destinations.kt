@@ -14,7 +14,7 @@ object BrewMateDestinations {
     const val SCHEDULING_ROUTE = "scheduling"
     const val FAVORITES_ROUTE = "favorites_list"
     const val HISTORY_ROUTE = "history"
-    const val MANAGEMENT_HUB_ROUTE = "management_hub"
+    const val CREATE_FAVORITE_ROUTE = "create_favorite"
     const val SETTINGS_ROUTE = "settings"
 }
 
