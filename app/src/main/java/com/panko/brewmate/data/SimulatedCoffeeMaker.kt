@@ -1,12 +1,18 @@
 package com.panko.brewmate.data
 
+import com.panko.brewmate.model.BaseDrinkType
 import com.panko.brewmate.model.BrewSettings
+import com.panko.brewmate.model.ChocolateType
 import com.panko.brewmate.model.CoffeeMakerState
 import com.panko.brewmate.model.DrinkType
 import com.panko.brewmate.model.CoffeeShotSize
+import com.panko.brewmate.model.MilkBase
 import com.panko.brewmate.model.MilkStyle
+import com.panko.brewmate.model.SugarType
+import com.panko.brewmate.model.SyrupType
+import com.panko.brewmate.model.TeaType
 import com.panko.brewmate.model.Temperature
-import com.panko.brewmate.util.Scheduler // Import the Scheduler interface
+import com.panko.brewmate.util.Scheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -19,10 +25,10 @@ import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
 class SimulatedCoffeeMaker(
-    private val scheduler: Scheduler // Scheduler is injected here
+    private val scheduler: Scheduler
 ) : CoffeeMakerRepository {
 
-    // --- Internal MutableStateFlows for all states and settings ---
+    // --- State & Inventory Flows ---
     private val _coffeeMakerState = MutableStateFlow(CoffeeMakerState(
         isPoweredOn = false,
         status = "Off",
@@ -30,7 +36,7 @@ class SimulatedCoffeeMaker(
         detailedMessage = "",
         canBrewDrink = false,
         canStopBrew = false,
-        hasMaintenanceAlert = false // Add this to the state
+        hasMaintenanceAlert = false
     ))
     override val coffeeMakerState: StateFlow<CoffeeMakerState> = _coffeeMakerState.asStateFlow()
 
@@ -40,8 +46,31 @@ class SimulatedCoffeeMaker(
     private val _waterLevel = MutableStateFlow(100)
     override val waterLevel: StateFlow<Int> = _waterLevel.asStateFlow()
 
-    private val _milkLevel = MutableStateFlow(100)
-    override val milkLevel: StateFlow<Int> = _milkLevel.asStateFlow()
+    // Maps
+    private val _milkLevels = MutableStateFlow(
+        MilkBase.entries.filter { it != MilkBase.NONE }.associateWith { 100 }
+    )
+    override val milkLevels = _milkLevels.asStateFlow()
+
+    private val _syrupLevels = MutableStateFlow(
+        SyrupType.entries.filter { it != SyrupType.NONE }.associateWith { 100 }
+    )
+    override val syrupLevels = _syrupLevels.asStateFlow()
+
+    private val _sugarLevels = MutableStateFlow(
+        SugarType.entries.filter { it != SugarType.NONE }.associateWith { 100 }
+    )
+    override val sugarLevels = _sugarLevels.asStateFlow()
+
+    private val _teaLevels = MutableStateFlow(
+        TeaType.entries.associateWith { 100 }
+    )
+    override val teaLevels = _teaLevels.asStateFlow()
+
+    private val _chocolateLevels = MutableStateFlow(
+        ChocolateType.entries.associateWith { 100 }
+    )
+    override val chocolateLevels = _chocolateLevels.asStateFlow()
 
     private val _groundsBinLevel = MutableStateFlow(0)
     override val groundsBinLevel: StateFlow<Int> = _groundsBinLevel.asStateFlow()
@@ -57,9 +86,9 @@ class SimulatedCoffeeMaker(
     ))
     override val customBrewSettings: StateFlow<BrewSettings> = _customBrewSettings.asStateFlow()
 
-    private var brewJob: Job? = null // Manages the brewing coroutine
+    private var brewJob: Job? = null
 
-    // --- Implementations of CoffeeMakerRepository functions ---
+    // --- Actions ---
 
     override fun togglePower() {
         _coffeeMakerState.update { currentState ->
@@ -68,24 +97,24 @@ class SimulatedCoffeeMaker(
                 isPoweredOn = newIsPoweredOn,
                 status = if (newIsPoweredOn) "Ready" else "Off",
                 detailedMessage = if (newIsPoweredOn) "Ready to brew" else "Press power button",
-                canBrewDrink = newIsPoweredOn // Can start if turning on
+                canBrewDrink = newIsPoweredOn
             )
         }
         if (!_coffeeMakerState.value.isPoweredOn) {
-            brewJob?.cancel() // Cancel any ongoing brew if turning off
+            brewJob?.cancel()
             _coffeeMakerState.update { it.copy(canStopBrew = false) }
         }
     }
 
     override fun startBrew(drinkType: DrinkType, customSettings: BrewSettings?) {
-        // Use a CoroutineScope to launch the brewing process asynchronously
         CoroutineScope(Dispatchers.Default).launch {
-            // Pre-brew checks (simplified for now, can be expanded)
+
+            // --- 1. GENERAL CHECKS ---
             if (!_coffeeMakerState.value.isPoweredOn) {
                 _coffeeMakerState.update { it.copy(detailedMessage = "Error: Coffee maker is off.") }
                 return@launch
             }
-            if (_coffeeMakerState.value.canStopBrew) { // Already brewing
+            if (_coffeeMakerState.value.canStopBrew) {
                 _coffeeMakerState.update { it.copy(detailedMessage = "Error: Already brewing.") }
                 return@launch
             }
@@ -94,107 +123,210 @@ class SimulatedCoffeeMaker(
                 return@launch
             }
 
-            // Determine effective settings (either preset or custom)
-            val effectiveSettings = customSettings ?: BrewSettings(
-                strength = drinkType.defaultStrength,
-                coffeeShotSize = drinkType.defaultCoffeeShotSize,
-                milkStyle = drinkType.defaultMilkStyle,
-                temperature = drinkType.defaultTemperature
-            )
+            // --- 2. DEFINE REQUIREMENTS ---
+            val effectiveSettings = customSettings ?: _customBrewSettings.value
 
-            // Simulate resource checks and consumption
-            val beansToConsume = 10 // Simplified consumption
-            val waterToConsume = 15
-            val milkToConsume = if (effectiveSettings.milkStyle != MilkStyle.NONE) 10 else 0
+            val waterNeeded = 15
+            val beansNeeded = if (effectiveSettings.baseType == BaseDrinkType.COFFEE) 10 else 0
+            val groundsSpaceNeeded = if (effectiveSettings.baseType == BaseDrinkType.COFFEE) 5 else 0
+            val milkNeeded = if (effectiveSettings.milkBase != MilkBase.NONE) 10 else 0
+            val teaNeeded = if (effectiveSettings.baseType == BaseDrinkType.TEA) 10 else 0
+            // Note: Make sure your BrewSettings uses chocolateTsp!
+            val chocolateNeeded = if (effectiveSettings.baseType == BaseDrinkType.CHOCOLATE) effectiveSettings.chocolateTsp * 5 else 0
+            val syrupNeeded = if (effectiveSettings.syrupType != SyrupType.NONE) effectiveSettings.syrupPumps * 5 else 0
+            val sugarNeeded = if (effectiveSettings.sugarType != SugarType.NONE) effectiveSettings.sugarAmount * 5 else 0
 
-            if (_beansLevel.value < beansToConsume) {
-                _coffeeMakerState.update { it.copy(status = "ERROR_BEANS_LOW", detailedMessage = "ALERT: Add beans!", hasMaintenanceAlert = true) }
-                return@launch
-            }
-            if (_waterLevel.value < waterToConsume) {
+            // --- 3. CHECK INVENTORY ---
+
+            // A. Water
+            if (_waterLevel.value < waterNeeded) {
                 _coffeeMakerState.update { it.copy(status = "ERROR_WATER_LOW", detailedMessage = "ALERT: Add water!", hasMaintenanceAlert = true) }
                 return@launch
             }
-            if (_milkLevel.value < milkToConsume) {
-                _coffeeMakerState.update { it.copy(status = "ERROR_MILK_LOW", detailedMessage = "ALERT: Add milk!", hasMaintenanceAlert = true) }
+
+            // B. Beans
+            if (beansNeeded > 0 && _beansLevel.value < beansNeeded) {
+                _coffeeMakerState.update { it.copy(status = "ERROR_BEANS_LOW", detailedMessage = "ALERT: Add Coffee Beans!", hasMaintenanceAlert = true) }
                 return@launch
             }
-            if (_groundsBinLevel.value >= 90) { // Near full
-                _coffeeMakerState.update { it.copy(status = "ERROR_GROUNDS_FULL", detailedMessage = "ALERT: Empty grounds!", hasMaintenanceAlert = true) }
+
+            // C. Grounds Bin
+            if (groundsSpaceNeeded > 0 && _groundsBinLevel.value >= (100 - groundsSpaceNeeded)) {
+                _coffeeMakerState.update { it.copy(status = "ERROR_GROUNDS_FULL", detailedMessage = "ALERT: Empty grounds bin!", hasMaintenanceAlert = true) }
                 return@launch
             }
 
+            // D. Milk
+            if (milkNeeded > 0) {
+                val currentMilk = _milkLevels.value[effectiveSettings.milkBase] ?: 0
+                if (currentMilk < milkNeeded) {
+                    _coffeeMakerState.update { it.copy(
+                        status = "ERROR_MILK_LOW",
+                        detailedMessage = "ALERT: Low on ${effectiveSettings.milkBase.displayName}!",
+                        hasMaintenanceAlert = true
+                    )}
+                    return@launch
+                }
+            }
 
-            // Start the brewing process
-            val displayName = drinkType.displayName
+            // E. Tea
+            if (teaNeeded > 0) {
+                val currentTea = _teaLevels.value[effectiveSettings.teaType] ?: 0
+                if (currentTea < teaNeeded) {
+                    _coffeeMakerState.update { it.copy(
+                        status = "ERROR_TEA_LOW",
+                        detailedMessage = "ALERT: Refill ${effectiveSettings.teaType.displayName}!",
+                        hasMaintenanceAlert = true
+                    )}
+                    return@launch
+                }
+            }
 
-            // --- START BREW: Set the primary message for the whole process ---
+            // F. Chocolate
+            if (chocolateNeeded > 0) {
+                val currentChoco = _chocolateLevels.value[effectiveSettings.chocolateType] ?: 0
+                if (currentChoco < chocolateNeeded) {
+                    _coffeeMakerState.update { it.copy(
+                        status = "ERROR_CHOCO_LOW",
+                        detailedMessage = "ALERT: Refill ${effectiveSettings.chocolateType.displayName}!",
+                        hasMaintenanceAlert = true
+                    )}
+                    return@launch
+                }
+            }
+
+            // G. Syrup
+            if (syrupNeeded > 0) {
+                val currentSyrup = _syrupLevels.value[effectiveSettings.syrupType] ?: 0
+                if (currentSyrup < syrupNeeded) {
+                    _coffeeMakerState.update { it.copy(
+                        status = "ERROR_SYRUP_LOW",
+                        detailedMessage = "ALERT: Refill ${effectiveSettings.syrupType.displayName}!",
+                        hasMaintenanceAlert = true
+                    )}
+                    return@launch
+                }
+            }
+
+            // H. Sugar
+            if (sugarNeeded > 0) {
+                val currentSugar = _sugarLevels.value[effectiveSettings.sugarType] ?: 0
+                if (currentSugar < sugarNeeded) {
+                    _coffeeMakerState.update { it.copy(
+                        status = "ERROR_SUGAR_LOW",
+                        detailedMessage = "ALERT: Refill ${effectiveSettings.sugarType.displayName}!",
+                        hasMaintenanceAlert = true
+                    )}
+                    return@launch
+                }
+            }
+
+
+            // --- 4. CONSUME RESOURCES (Update the Maps) ---
+
+            // Basics
+            _waterLevel.update { (it - waterNeeded).coerceAtLeast(0) }
+            if (beansNeeded > 0) _beansLevel.update { (it - beansNeeded).coerceAtLeast(0) }
+
+            // Milk
+            if (milkNeeded > 0) {
+                _milkLevels.update { map ->
+                    val current = map[effectiveSettings.milkBase] ?: 0
+                    map.toMutableMap().apply { this[effectiveSettings.milkBase] = (current - milkNeeded).coerceAtLeast(0) }
+                }
+            }
+
+            // Tea
+            if (teaNeeded > 0) {
+                _teaLevels.update { map ->
+                    val current = map[effectiveSettings.teaType] ?: 0
+                    map.toMutableMap().apply { this[effectiveSettings.teaType] = (current - teaNeeded).coerceAtLeast(0) }
+                }
+            }
+
+            // Chocolate
+            if (chocolateNeeded > 0) {
+                _chocolateLevels.update { map ->
+                    val current = map[effectiveSettings.chocolateType] ?: 0
+                    map.toMutableMap().apply { this[effectiveSettings.chocolateType] = (current - chocolateNeeded).coerceAtLeast(0) }
+                }
+            }
+
+            // Syrup
+            if (syrupNeeded > 0) {
+                _syrupLevels.update { map ->
+                    val current = map[effectiveSettings.syrupType] ?: 0
+                    map.toMutableMap().apply { this[effectiveSettings.syrupType] = (current - syrupNeeded).coerceAtLeast(0) }
+                }
+            }
+
+            // Sugar
+            if (sugarNeeded > 0) {
+                _sugarLevels.update { map ->
+                    val current = map[effectiveSettings.sugarType] ?: 0
+                    map.toMutableMap().apply { this[effectiveSettings.sugarType] = (current - sugarNeeded).coerceAtLeast(0) }
+                }
+            }
+
+            // --- 5. START THE PROCESS ---
+            val displayName = if (drinkType == DrinkType.CUSTOM)
+                effectiveSettings.baseType.name.lowercase().capitalize() else drinkType.displayName
+
             _coffeeMakerState.update {
                 it.copy(
-                    status = "Brewing...",
+                    status = "Starting...",
                     canBrewDrink = false,
                     canStopBrew = true,
-                    primaryMessage = "Brewing your $displayName!", // Primary Message set here
-                    detailedMessage = "Starting process..." // Initial detailed message
+                    primaryMessage = "Making your $displayName!",
+                    detailedMessage = "Initializing..."
                 )
             }
-            _beansLevel.update { (it - beansToConsume).coerceAtLeast(0) }
-            _waterLevel.update { (it - waterToConsume).coerceAtLeast(0) }
-            _milkLevel.update { (it - milkToConsume).coerceAtLeast(0) }
 
             brewJob = launch {
                 try {
+                    val brewSteps = getBrewSteps(effectiveSettings)
 
-                    // Simulate grinding
+                    for (step in brewSteps) {
+                        _coffeeMakerState.update {
+                            it.copy(status = step.message, detailedMessage = step.message)
+                        }
+                        delay(step.durationMs.milliseconds)
+                    }
+
                     _coffeeMakerState.update {
-                        it.copy(status = "Grinding beans...", detailedMessage = "Grinding beans...") }
-                    delay(2000.milliseconds) // Non-blocking delay
-
-                    // Simulate heating water
-                    _coffeeMakerState.update { it.copy(status = "Heating water...", detailedMessage = "Heating water...") }
-                    delay(2000.milliseconds)
-
-                    // Simulate brewing
-                    _coffeeMakerState.update { it.copy(status = "Brewing coffee...", detailedMessage = "Extracting coffee...") }
-                    delay(3000.milliseconds)
-
-                    // Simulate milk (if applicable)
-                    if (effectiveSettings.milkStyle != MilkStyle.NONE) {
-                        _coffeeMakerState.update { it.copy(status = "Preparing milk...", detailedMessage = "Preparing milk...") }
-                        delay(2000.milliseconds)
+                        it.copy(
+                            status = "Done",
+                            primaryMessage = "Enjoy!",
+                            detailedMessage = "Your $displayName is ready."
+                        )
                     }
 
-                    // Simulate chilling (if applicable)
-                    if (effectiveSettings.temperature == Temperature.COLD) { // Assuming COLD for iced
-                        _coffeeMakerState.update { it.copy(status = "Chilling drink...", detailedMessage = "Adding ice...") }
-                        delay(2000.milliseconds)
+                    _groundsBinLevel.update { (it + groundsSpaceNeeded).coerceAtMost(100) }
+
+                    delay(4000)
+                    _coffeeMakerState.update {
+                        it.copy(status = "Ready", canBrewDrink = true, detailedMessage = "Ready to brew.", primaryMessage = "Ready")
                     }
 
-                    // Done
-                    _coffeeMakerState.update { it.copy(status = "Done", detailedMessage = "${drinkType.displayName} is ready! Enjoy.") }
-                    _groundsBinLevel.update { (it + 10).coerceAtMost(100) } // Increase grounds
-
-                    scheduler.schedule(5000) { // Display "Done" for a few seconds
-                        _coffeeMakerState.update { it.copy(status = "Ready", canBrewDrink = true, detailedMessage = "Ready to brew.") }
-                    }
                 } catch (e: Exception) {
-                    _coffeeMakerState.update { it.copy(status = "Error", detailedMessage = "Brew failed: ${e.localizedMessage}", canBrewDrink = true, canStopBrew = false) }
+                    _coffeeMakerState.update {
+                        it.copy(status = "Error", detailedMessage = "Brew failed: ${e.localizedMessage}", canBrewDrink = true)
+                    }
                 } finally {
-                    _coffeeMakerState.update { it.copy(canStopBrew = false) } // Ensure stop button is disabled
+                    _coffeeMakerState.update { it.copy(canStopBrew = false) }
                 }
             }
         }
     }
 
     override fun stopBrew() {
-        brewJob?.cancel() // Cancel the brewing job
+        brewJob?.cancel()
         _coffeeMakerState.update { it.copy(status = "Stopped", canStopBrew = false, canBrewDrink = true, detailedMessage = "Brew stopped.") }
     }
 
     override fun setSelectedCoffeeType(type: DrinkType) {
         _selectedDrinkType.value = type
         if (type != DrinkType.CUSTOM) {
-            // When a preset is selected, update custom settings to match
             _customBrewSettings.update {
                 it.copy(
                     strength = type.defaultStrength,
@@ -208,7 +340,7 @@ class SimulatedCoffeeMaker(
 
     override fun setCustomStrength(strength: String) {
         _customBrewSettings.update { it.copy(strength = strength) }
-        _selectedDrinkType.value = DrinkType.CUSTOM // Any manual change sets type to CUSTOM
+        _selectedDrinkType.value = DrinkType.CUSTOM
     }
 
     override fun setCustomCoffeeShotSize(size: CoffeeShotSize) {
@@ -226,40 +358,45 @@ class SimulatedCoffeeMaker(
         _selectedDrinkType.value = DrinkType.CUSTOM
     }
 
+    // --- Refill Functions ---
     override fun addBeans() {
         _beansLevel.update { 100 }
-        _coffeeMakerState.update { currentState ->
-            if (currentState.status == "ERROR_BEANS_LOW") {
-                currentState.copy(status = "Ready", detailedMessage = "Beans refilled.", hasMaintenanceAlert = false)
-            } else currentState.copy(detailedMessage = "Beans refilled.")
-        }
+        if (_coffeeMakerState.value.status == "ERROR_BEANS_LOW") clearMaintenanceAlert()
     }
 
     override fun addWater() {
         _waterLevel.update { 100 }
-        _coffeeMakerState.update { currentState ->
-            if (currentState.status == "ERROR_WATER_LOW") {
-                currentState.copy(status = "Ready", detailedMessage = "Water refilled.", hasMaintenanceAlert = false)
-            } else currentState.copy(detailedMessage = "Water refilled.")
-        }
+        if (_coffeeMakerState.value.status == "ERROR_WATER_LOW") clearMaintenanceAlert()
     }
 
-    override fun addMilk() {
-        _milkLevel.update { 100 }
-        _coffeeMakerState.update { currentState ->
-            if (currentState.status == "ERROR_MILK_LOW") {
-                currentState.copy(status = "Ready", detailedMessage = "Milk refilled.", hasMaintenanceAlert = false)
-            } else currentState.copy(detailedMessage = "Milk refilled.")
-        }
+    override fun refillMilk(type: MilkBase) {
+        _milkLevels.update { map -> map.toMutableMap().apply { this[type] = 100 } }
+        if (_coffeeMakerState.value.status == "ERROR_MILK_LOW") clearMaintenanceAlert()
+    }
+
+    override fun refillSyrup(type: SyrupType) {
+        _syrupLevels.update { map -> map.toMutableMap().apply { this[type] = 100 } }
+        if (_coffeeMakerState.value.status == "ERROR_SYRUP_LOW") clearMaintenanceAlert()
+    }
+
+    override fun refillSugar(type: SugarType) {
+        _sugarLevels.update { map -> map.toMutableMap().apply { this[type] = 100 } }
+        if (_coffeeMakerState.value.status == "ERROR_SUGAR_LOW") clearMaintenanceAlert()
+    }
+
+    override fun refillTea(type: TeaType) {
+        _teaLevels.update { map -> map.toMutableMap().apply { this[type] = 100 } }
+        if (_coffeeMakerState.value.status == "ERROR_TEA_LOW") clearMaintenanceAlert()
+    }
+
+    override fun refillChocolate(type: ChocolateType) {
+        _chocolateLevels.update { map -> map.toMutableMap().apply { this[type] = 100 } }
+        if (_coffeeMakerState.value.status == "ERROR_CHOCO_LOW") clearMaintenanceAlert()
     }
 
     override fun emptyGroundsBin() {
         _groundsBinLevel.update { 0 }
-        _coffeeMakerState.update { currentState ->
-            if (currentState.status == "ERROR_GROUNDS_FULL") {
-                currentState.copy(status = "Ready", detailedMessage = "Grounds bin emptied.", hasMaintenanceAlert = false)
-            } else currentState.copy(detailedMessage = "Grounds bin emptied.")
-        }
+        if (_coffeeMakerState.value.status == "ERROR_GROUNDS_FULL") clearMaintenanceAlert()
     }
 
     override fun clearMaintenanceAlert() {
@@ -273,11 +410,8 @@ class SimulatedCoffeeMaker(
     }
 
     override fun setBrewSettingsFromFavorite(settings: BrewSettings, drinkName: String) {
-
-        // Accessing the private state flows is now possible:
         _customBrewSettings.update { settings }
         _selectedDrinkType.update { DrinkType.CUSTOM }
-
         _coffeeMakerState.update {
             it.copy(
                 status = "Ready",
@@ -290,4 +424,55 @@ class SimulatedCoffeeMaker(
     override fun updateBrewSettings(settings: BrewSettings) {
         _customBrewSettings.value = settings
     }
+
+    // Helper
+    private fun getBrewSteps(settings: BrewSettings): List<BrewStep> {
+        val steps = mutableListOf<BrewStep>()
+
+        // 1. PREPARATION
+        when (settings.baseType) {
+            BaseDrinkType.COFFEE -> {
+                steps.add(BrewStep("Grinding beans (${settings.coffeeShotSize.displayName})...", 2500))
+                steps.add(BrewStep("Tamping grounds...", 1000))
+            }
+            BaseDrinkType.TEA -> {
+                steps.add(BrewStep("Heating water to optimal temp...", 2000))
+                val steepTime = if (settings.steepTime > 0) settings.steepTime * 1000 else 3000
+                steps.add(BrewStep("Steeping ${settings.teaType.displayName}...", steepTime))
+            }
+            BaseDrinkType.CHOCOLATE -> {
+                val liquidName = if (settings.milkBase == MilkBase.NONE) "water" else settings.milkBase.displayName
+                steps.add(BrewStep("Heating $liquidName to 80°C...", 4000))
+                // Note: Using chocolateTsp here!
+                steps.add(BrewStep("Mixing ${settings.chocolateTsp} tsp of ${settings.chocolateType.displayName}...", 3000))
+                steps.add(BrewStep("Pouring creamy hot chocolate...", 3000))
+            }
+        }
+
+        // 2. BREWING / POURING
+        if (settings.baseType == BaseDrinkType.COFFEE) {
+            steps.add(BrewStep("Extracting espresso...", 3000))
+        } else if (settings.baseType == BaseDrinkType.TEA) {
+            steps.add(BrewStep("Pouring tea...", 1500))
+        }
+
+        // 3. MILK
+        if (settings.milkBase != MilkBase.NONE && settings.baseType != BaseDrinkType.CHOCOLATE) {
+            val action = if (settings.milkStyle == MilkStyle.FOAMED) "Foaming" else "Steaming"
+            steps.add(BrewStep("$action ${settings.milkBase.displayName}...", 2500))
+            steps.add(BrewStep("Pouring milk...", 1500))
+        }
+
+        // 4. FLAVORINGS
+        if (settings.syrupType != SyrupType.NONE) {
+            steps.add(BrewStep("Adding ${settings.syrupPumps} pumps of ${settings.syrupType.displayName}...", 1500))
+        }
+        if (settings.sugarType != SugarType.NONE) {
+            steps.add(BrewStep("Adding ${settings.sugarAmount} tsp of ${settings.sugarType.displayName}...", 1500))
+        }
+
+        return steps
+    }
 }
+
+private data class BrewStep(val message: String, val durationMs: Long)

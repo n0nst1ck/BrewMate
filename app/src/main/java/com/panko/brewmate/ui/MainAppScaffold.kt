@@ -26,7 +26,7 @@ import androidx.navigation.compose.rememberNavController
 import com.panko.brewmate.model.BuilderMode
 import com.panko.brewmate.ui.brew.ConfigureBrewTypeScreen
 import com.panko.brewmate.ui.home.HomeScreen
-import com.panko.brewmate.ui.levels.LevelsTabContent
+import com.panko.brewmate.ui.levels.InventoryScreen
 import com.panko.brewmate.navigation.BrewMateDestinations
 import com.panko.brewmate.navigation.NavItem
 import com.panko.brewmate.ui.brew.DrinkBuilderScreen
@@ -135,7 +135,7 @@ fun MainAppScaffold(
             }
 
             composable(BrewMateDestinations.INVENTORY_ROUTE) {
-                LevelsTabContent(viewModel = coffeeMakerViewModel)
+                InventoryScreen(viewModel = coffeeMakerViewModel)
             }
 
             composable(BrewMateDestinations.SCHEDULING_ROUTE) {

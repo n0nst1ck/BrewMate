@@ -7,7 +7,11 @@ import com.panko.brewmate.model.CoffeeShotSize
 import com.panko.brewmate.model.MilkStyle
 import com.panko.brewmate.model.Temperature
 import com.panko.brewmate.model.BrewSettings
-
+import com.panko.brewmate.model.ChocolateType
+import com.panko.brewmate.model.MilkBase
+import com.panko.brewmate.model.SugarType
+import com.panko.brewmate.model.SyrupType
+import com.panko.brewmate.model.TeaType
 
 
 // Interface for interacting with the coffee maker
@@ -20,8 +24,13 @@ interface CoffeeMakerRepository {
     // --- Levels ---
     val beansLevel: StateFlow<Int>
     val waterLevel: StateFlow<Int>
-    val milkLevel: StateFlow<Int>
     val groundsBinLevel: StateFlow<Int>
+
+    val milkLevels: StateFlow<Map<MilkBase, Int>>
+    val syrupLevels: StateFlow<Map<SyrupType, Int>>
+    val sugarLevels: StateFlow<Map<SugarType, Int>>
+    val teaLevels: StateFlow<Map<TeaType, Int>>
+    val chocolateLevels: StateFlow<Map<ChocolateType, Int>>
 
     // --- Commands ---
     fun togglePower()
@@ -34,7 +43,11 @@ interface CoffeeMakerRepository {
     fun setCustomTemperature(temperature: Temperature)
     fun addBeans()
     fun addWater()
-    fun addMilk()
+    fun refillMilk(type: MilkBase)
+    fun refillSyrup(type: SyrupType)
+    fun refillSugar(type: SugarType)
+    fun refillTea(type: TeaType)
+    fun refillChocolate(type: ChocolateType)
     fun emptyGroundsBin()
     fun clearMaintenanceAlert()
     fun setBrewSettingsFromFavorite(settings: BrewSettings, drinkName: String)
