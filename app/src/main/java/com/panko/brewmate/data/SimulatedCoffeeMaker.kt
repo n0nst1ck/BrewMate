@@ -106,7 +106,7 @@ class SimulatedCoffeeMaker(
         }
     }
 
-    override fun startBrew(drinkType: DrinkType, customSettings: BrewSettings?) {
+    override fun startBrew(drinkType: DrinkType, customSettings: BrewSettings?, drinkName: String?) {
         CoroutineScope(Dispatchers.Default).launch {
 
             // --- 1. GENERAL CHECKS ---
@@ -124,7 +124,28 @@ class SimulatedCoffeeMaker(
             }
 
             // --- 2. DEFINE REQUIREMENTS ---
-            val effectiveSettings = customSettings ?: _customBrewSettings.value
+            val effectiveSettings = if (customSettings != null) {
+                customSettings
+            } else if (drinkType == DrinkType.CUSTOM) {
+                _customBrewSettings.value
+            } else {
+                BrewSettings(
+                    baseType = BaseDrinkType.COFFEE,
+                    strength = drinkType.defaultStrength,
+                    coffeeShotSize = drinkType.defaultCoffeeShotSize,
+                    milkStyle = drinkType.defaultMilkStyle,
+                    temperature = drinkType.defaultTemperature,
+
+                    // clearing out any old custom junk
+                    milkBase = if (drinkType.defaultMilkStyle != MilkStyle.NONE) MilkBase.WHOLE else MilkBase.NONE,
+                    syrupType = SyrupType.NONE,
+                    syrupPumps = 0,
+                    sugarType = SugarType.NONE,
+                    sugarAmount = 0,
+                    teaType = TeaType.BLACK,
+                    chocolateType = ChocolateType.MILK
+                )
+            }
 
             val waterNeeded = 15
             val beansNeeded = if (effectiveSettings.baseType == BaseDrinkType.COFFEE) 10 else 0
@@ -269,8 +290,11 @@ class SimulatedCoffeeMaker(
             }
 
             // --- 5. START THE PROCESS ---
-            val displayName = if (drinkType == DrinkType.CUSTOM)
-                effectiveSettings.baseType.name.lowercase().capitalize() else drinkType.displayName
+            val displayName = drinkName ?: if (drinkType == DrinkType.CUSTOM) {
+                "Custom ${effectiveSettings.baseType.name.lowercase().capitalize()}"
+            } else {
+                drinkType.displayName
+            }
 
             _coffeeMakerState.update {
                 it.copy(

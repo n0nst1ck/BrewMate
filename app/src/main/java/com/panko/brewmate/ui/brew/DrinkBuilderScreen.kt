@@ -316,7 +316,8 @@ fun DrinkBuilderScreen(
                 OutlinedButton(
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        viewModel.startBrew(DrinkType.CUSTOM, customSettings)
+                        val smartName = "Custom ${customSettings.baseType.name.lowercase().capitalizeWords()}"
+                        viewModel.startBrew(DrinkType.CUSTOM, customSettings, specificName = smartName)
                         navController.popBackStack(BrewMateDestinations.HOME_ROUTE, inclusive = false)
                     }
                 ) {
@@ -348,10 +349,10 @@ fun DrinkBuilderScreen(
             settings = customSettings,
             favoritesViewModel = favoritesViewModel,
             onDismiss = { showSaveDialog.value = false },
-            onSaveComplete = {
+            onSaveComplete = { savedName ->
                 if (mode == BuilderMode.BREW_NOW) {
                     // If brewing, start the machine
-                    viewModel.startBrew(DrinkType.CUSTOM, customSettings)
+                    viewModel.startBrew(DrinkType.CUSTOM, customSettings, specificName = savedName)
                     navController.popBackStack(BrewMateDestinations.HOME_ROUTE, inclusive = false)
                 } else {
                     // If just designing, go back to Favorites list
@@ -409,7 +410,7 @@ fun SaveFavoriteDialog(
     settings: BrewSettings,
     favoritesViewModel: FavoritesViewModel,
     onDismiss: () -> Unit,
-    onSaveComplete: () -> Unit
+    onSaveComplete: (String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
 
@@ -432,7 +433,7 @@ fun SaveFavoriteDialog(
                 enabled = name.isNotBlank(),
                 onClick = {
                     favoritesViewModel.saveFavorite(name, settings)
-                    onSaveComplete()
+                    onSaveComplete(name)
                     onDismiss()
                 }
             ) {

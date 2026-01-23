@@ -101,7 +101,7 @@ fun FavoritesScreen(
                             onDelete = { viewModel.deleteFavorite(drink.id) },
                             onBrew = {
                                 // ⚡️ LOGIC: Start brew & go Home
-                                coffeeMakerViewModel.startBrew(DrinkType.CUSTOM, drink.settings)
+                                coffeeMakerViewModel.startBrew(DrinkType.CUSTOM, drink.settings, specificName = drink.name)
                                 navController.navigate(BrewMateDestinations.HOME_ROUTE) {
                                     popUpTo(BrewMateDestinations.HOME_ROUTE) { inclusive = true }
                                 }

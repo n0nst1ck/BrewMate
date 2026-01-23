@@ -6,6 +6,7 @@ import com.panko.brewmate.data.CoffeeMakerRepository
 import com.panko.brewmate.data.HistoryRepository
 import com.panko.brewmate.data.AuthRepository
 import com.panko.brewmate.model.*
+import com.panko.brewmate.util.capitalizeWords
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -36,8 +37,8 @@ class CoffeeMakerViewModel(
     // --- Actions ---
     fun togglePower() { coffeeMakerRepository.togglePower() }
 
-    fun startBrew(drinkType: DrinkType, customSettings: BrewSettings?) {
-        coffeeMakerRepository.startBrew(drinkType, customSettings)
+    fun startBrew(drinkType: DrinkType, customSettings: BrewSettings?, specificName: String? = null) {
+        coffeeMakerRepository.startBrew(drinkType, customSettings, specificName)
 
         // Add to history logic
         val currentUserId = authRepository.getCurrentUserId()
@@ -48,15 +49,26 @@ class CoffeeMakerViewModel(
                     coffeeShotSize = drinkType.defaultCoffeeShotSize,
                     milkStyle = drinkType.defaultMilkStyle,
                     temperature = drinkType.defaultTemperature,
-                    // Ensure defaults are safe
                     syrupType = SyrupType.NONE,
                     syrupPumps = 0,
                     sugarAmount = 0
                 )
 
+                val finalName = when {
+                    // specific name was passed (ie morning latte from favorites)
+                    !specificName.isNullOrBlank() -> specificName
+
+                    // custom drink with no name
+                    drinkType == DrinkType.CUSTOM && customSettings != null -> {
+                        val base = customSettings.baseType.name.lowercase().capitalizeWords()
+                        "Custom $base"
+                    }
+
+                    else -> drinkType.displayName // default name
+                }
                 val historyItem = BrewHistoryItem(
                     userId = currentUserId,
-                    drinkName = drinkType.displayName,
+                    drinkName = finalName,
                     settings = settingsToSave,
                     timestamp = System.currentTimeMillis()
                 )
