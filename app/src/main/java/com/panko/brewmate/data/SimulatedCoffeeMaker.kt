@@ -106,242 +106,240 @@ class SimulatedCoffeeMaker(
         }
     }
 
-    override fun startBrew(drinkType: DrinkType, customSettings: BrewSettings?, drinkName: String?) {
-        CoroutineScope(Dispatchers.Default).launch {
+    override fun startBrew(drinkType: DrinkType, customSettings: BrewSettings?, drinkName: String?): Boolean {
+        // --- 1. GENERAL CHECKS ---
+        if (!_coffeeMakerState.value.isPoweredOn) {
+            _coffeeMakerState.update { it.copy(detailedMessage = "Error: Coffee maker is off.") }
+            return false
+        }
+        if (_coffeeMakerState.value.canStopBrew) {
+            _coffeeMakerState.update { it.copy(detailedMessage = "Error: Already brewing.") }
+            return false
+        }
+        if (_coffeeMakerState.value.hasMaintenanceAlert) {
+            _coffeeMakerState.update { it.copy(detailedMessage = "Error: Clear maintenance alert first.") }
+            return false
+        }
 
-            // --- 1. GENERAL CHECKS ---
-            if (!_coffeeMakerState.value.isPoweredOn) {
-                _coffeeMakerState.update { it.copy(detailedMessage = "Error: Coffee maker is off.") }
-                return@launch
-            }
-            if (_coffeeMakerState.value.canStopBrew) {
-                _coffeeMakerState.update { it.copy(detailedMessage = "Error: Already brewing.") }
-                return@launch
-            }
-            if (_coffeeMakerState.value.hasMaintenanceAlert) {
-                _coffeeMakerState.update { it.copy(detailedMessage = "Error: Clear maintenance alert first.") }
-                return@launch
-            }
+        // --- 2. DEFINE REQUIREMENTS ---
+        val effectiveSettings = if (customSettings != null) {
+            customSettings
+        } else if (drinkType == DrinkType.CUSTOM) {
+            _customBrewSettings.value
+        } else {
+            BrewSettings(
+                baseType = BaseDrinkType.COFFEE,
+                strength = drinkType.defaultStrength,
+                coffeeShotSize = drinkType.defaultCoffeeShotSize,
+                milkStyle = drinkType.defaultMilkStyle,
+                temperature = drinkType.defaultTemperature,
 
-            // --- 2. DEFINE REQUIREMENTS ---
-            val effectiveSettings = if (customSettings != null) {
-                customSettings
-            } else if (drinkType == DrinkType.CUSTOM) {
-                _customBrewSettings.value
-            } else {
-                BrewSettings(
-                    baseType = BaseDrinkType.COFFEE,
-                    strength = drinkType.defaultStrength,
-                    coffeeShotSize = drinkType.defaultCoffeeShotSize,
-                    milkStyle = drinkType.defaultMilkStyle,
-                    temperature = drinkType.defaultTemperature,
+                // clearing out any old custom junk
+                milkBase = if (drinkType.defaultMilkStyle != MilkStyle.NONE) MilkBase.WHOLE else MilkBase.NONE,
+                syrupType = SyrupType.NONE,
+                syrupPumps = 0,
+                sugarType = SugarType.NONE,
+                sugarAmount = 0,
+                teaType = TeaType.BLACK,
+                chocolateType = ChocolateType.MILK
+            )
+        }
 
-                    // clearing out any old custom junk
-                    milkBase = if (drinkType.defaultMilkStyle != MilkStyle.NONE) MilkBase.WHOLE else MilkBase.NONE,
-                    syrupType = SyrupType.NONE,
-                    syrupPumps = 0,
-                    sugarType = SugarType.NONE,
-                    sugarAmount = 0,
-                    teaType = TeaType.BLACK,
-                    chocolateType = ChocolateType.MILK
-                )
-            }
+        val waterNeeded = 15
+        val beansNeeded = if (effectiveSettings.baseType == BaseDrinkType.COFFEE) 10 else 0
+        val groundsSpaceNeeded = if (effectiveSettings.baseType == BaseDrinkType.COFFEE) 5 else 0
+        val milkNeeded = if (effectiveSettings.milkBase != MilkBase.NONE) 10 else 0
+        val teaNeeded = if (effectiveSettings.baseType == BaseDrinkType.TEA) 10 else 0
+        val chocolateNeeded = if (effectiveSettings.baseType == BaseDrinkType.CHOCOLATE) effectiveSettings.chocolateTsp * 5 else 0
+        val syrupNeeded = if (effectiveSettings.syrupType != SyrupType.NONE) effectiveSettings.syrupPumps * 5 else 0
+        val sugarNeeded = if (effectiveSettings.sugarType != SugarType.NONE) effectiveSettings.sugarAmount * 5 else 0
 
-            val waterNeeded = 15
-            val beansNeeded = if (effectiveSettings.baseType == BaseDrinkType.COFFEE) 10 else 0
-            val groundsSpaceNeeded = if (effectiveSettings.baseType == BaseDrinkType.COFFEE) 5 else 0
-            val milkNeeded = if (effectiveSettings.milkBase != MilkBase.NONE) 10 else 0
-            val teaNeeded = if (effectiveSettings.baseType == BaseDrinkType.TEA) 10 else 0
-            // Note: Make sure your BrewSettings uses chocolateTsp!
-            val chocolateNeeded = if (effectiveSettings.baseType == BaseDrinkType.CHOCOLATE) effectiveSettings.chocolateTsp * 5 else 0
-            val syrupNeeded = if (effectiveSettings.syrupType != SyrupType.NONE) effectiveSettings.syrupPumps * 5 else 0
-            val sugarNeeded = if (effectiveSettings.sugarType != SugarType.NONE) effectiveSettings.sugarAmount * 5 else 0
+        // --- 3. CHECK INVENTORY ---
 
-            // --- 3. CHECK INVENTORY ---
+        // A. Water
+        if (_waterLevel.value < waterNeeded) {
+            _coffeeMakerState.update { it.copy(status = "ERROR_WATER_LOW", detailedMessage = "ALERT: Add water!", hasMaintenanceAlert = true) }
+            return false
+        }
 
-            // A. Water
-            if (_waterLevel.value < waterNeeded) {
-                _coffeeMakerState.update { it.copy(status = "ERROR_WATER_LOW", detailedMessage = "ALERT: Add water!", hasMaintenanceAlert = true) }
-                return@launch
-            }
+        // B. Beans
+        if (beansNeeded > 0 && _beansLevel.value < beansNeeded) {
+            _coffeeMakerState.update { it.copy(status = "ERROR_BEANS_LOW", detailedMessage = "ALERT: Add Coffee Beans!", hasMaintenanceAlert = true) }
+            return false
+        }
 
-            // B. Beans
-            if (beansNeeded > 0 && _beansLevel.value < beansNeeded) {
-                _coffeeMakerState.update { it.copy(status = "ERROR_BEANS_LOW", detailedMessage = "ALERT: Add Coffee Beans!", hasMaintenanceAlert = true) }
-                return@launch
-            }
+        // C. Grounds Bin
+        if (groundsSpaceNeeded > 0 && _groundsBinLevel.value >= (100 - groundsSpaceNeeded)) {
+            _coffeeMakerState.update { it.copy(status = "ERROR_GROUNDS_FULL", detailedMessage = "ALERT: Empty grounds bin!", hasMaintenanceAlert = true) }
+            return false
+        }
 
-            // C. Grounds Bin
-            if (groundsSpaceNeeded > 0 && _groundsBinLevel.value >= (100 - groundsSpaceNeeded)) {
-                _coffeeMakerState.update { it.copy(status = "ERROR_GROUNDS_FULL", detailedMessage = "ALERT: Empty grounds bin!", hasMaintenanceAlert = true) }
-                return@launch
-            }
-
-            // D. Milk
-            if (milkNeeded > 0) {
-                val currentMilk = _milkLevels.value[effectiveSettings.milkBase] ?: 0
-                if (currentMilk < milkNeeded) {
-                    _coffeeMakerState.update { it.copy(
-                        status = "ERROR_MILK_LOW",
-                        detailedMessage = "ALERT: Low on ${effectiveSettings.milkBase.displayName}!",
-                        hasMaintenanceAlert = true
-                    )}
-                    return@launch
-                }
-            }
-
-            // E. Tea
-            if (teaNeeded > 0) {
-                val currentTea = _teaLevels.value[effectiveSettings.teaType] ?: 0
-                if (currentTea < teaNeeded) {
-                    _coffeeMakerState.update { it.copy(
-                        status = "ERROR_TEA_LOW",
-                        detailedMessage = "ALERT: Refill ${effectiveSettings.teaType.displayName}!",
-                        hasMaintenanceAlert = true
-                    )}
-                    return@launch
-                }
-            }
-
-            // F. Chocolate
-            if (chocolateNeeded > 0) {
-                val currentChoco = _chocolateLevels.value[effectiveSettings.chocolateType] ?: 0
-                if (currentChoco < chocolateNeeded) {
-                    _coffeeMakerState.update { it.copy(
-                        status = "ERROR_CHOCO_LOW",
-                        detailedMessage = "ALERT: Refill ${effectiveSettings.chocolateType.displayName}!",
-                        hasMaintenanceAlert = true
-                    )}
-                    return@launch
-                }
-            }
-
-            // G. Syrup
-            if (syrupNeeded > 0) {
-                val currentSyrup = _syrupLevels.value[effectiveSettings.syrupType] ?: 0
-                if (currentSyrup < syrupNeeded) {
-                    _coffeeMakerState.update { it.copy(
-                        status = "ERROR_SYRUP_LOW",
-                        detailedMessage = "ALERT: Refill ${effectiveSettings.syrupType.displayName}!",
-                        hasMaintenanceAlert = true
-                    )}
-                    return@launch
-                }
-            }
-
-            // H. Sugar
-            if (sugarNeeded > 0) {
-                val currentSugar = _sugarLevels.value[effectiveSettings.sugarType] ?: 0
-                if (currentSugar < sugarNeeded) {
-                    _coffeeMakerState.update { it.copy(
-                        status = "ERROR_SUGAR_LOW",
-                        detailedMessage = "ALERT: Refill ${effectiveSettings.sugarType.displayName}!",
-                        hasMaintenanceAlert = true
-                    )}
-                    return@launch
-                }
-            }
-
-
-            // --- 4. CONSUME RESOURCES (Update the Maps) ---
-
-            // Basics
-            _waterLevel.update { (it - waterNeeded).coerceAtLeast(0) }
-            if (beansNeeded > 0) _beansLevel.update { (it - beansNeeded).coerceAtLeast(0) }
-
-            // Milk
-            if (milkNeeded > 0) {
-                _milkLevels.update { map ->
-                    val current = map[effectiveSettings.milkBase] ?: 0
-                    map.toMutableMap().apply { this[effectiveSettings.milkBase] = (current - milkNeeded).coerceAtLeast(0) }
-                }
-            }
-
-            // Tea
-            if (teaNeeded > 0) {
-                _teaLevels.update { map ->
-                    val current = map[effectiveSettings.teaType] ?: 0
-                    map.toMutableMap().apply { this[effectiveSettings.teaType] = (current - teaNeeded).coerceAtLeast(0) }
-                }
-            }
-
-            // Chocolate
-            if (chocolateNeeded > 0) {
-                _chocolateLevels.update { map ->
-                    val current = map[effectiveSettings.chocolateType] ?: 0
-                    map.toMutableMap().apply { this[effectiveSettings.chocolateType] = (current - chocolateNeeded).coerceAtLeast(0) }
-                }
-            }
-
-            // Syrup
-            if (syrupNeeded > 0) {
-                _syrupLevels.update { map ->
-                    val current = map[effectiveSettings.syrupType] ?: 0
-                    map.toMutableMap().apply { this[effectiveSettings.syrupType] = (current - syrupNeeded).coerceAtLeast(0) }
-                }
-            }
-
-            // Sugar
-            if (sugarNeeded > 0) {
-                _sugarLevels.update { map ->
-                    val current = map[effectiveSettings.sugarType] ?: 0
-                    map.toMutableMap().apply { this[effectiveSettings.sugarType] = (current - sugarNeeded).coerceAtLeast(0) }
-                }
-            }
-
-            // --- 5. START THE PROCESS ---
-            val displayName = drinkName ?: if (drinkType == DrinkType.CUSTOM) {
-                "Custom ${effectiveSettings.baseType.name.lowercase().capitalize()}"
-            } else {
-                drinkType.displayName
-            }
-
-            _coffeeMakerState.update {
-                it.copy(
-                    status = "Starting...",
-                    canBrewDrink = false,
-                    canStopBrew = true,
-                    primaryMessage = "Making your $displayName!",
-                    detailedMessage = "Initializing..."
-                )
-            }
-
-            brewJob = launch {
-                try {
-                    val brewSteps = getBrewSteps(effectiveSettings)
-
-                    for (step in brewSteps) {
-                        _coffeeMakerState.update {
-                            it.copy(status = step.message, detailedMessage = step.message)
-                        }
-                        delay(step.durationMs.milliseconds)
-                    }
-
-                    _coffeeMakerState.update {
-                        it.copy(
-                            status = "Done",
-                            primaryMessage = "Enjoy!",
-                            detailedMessage = "Your $displayName is ready."
-                        )
-                    }
-
-                    _groundsBinLevel.update { (it + groundsSpaceNeeded).coerceAtMost(100) }
-
-                    delay(4000)
-                    _coffeeMakerState.update {
-                        it.copy(status = "Ready", canBrewDrink = true, detailedMessage = "Ready to brew.", primaryMessage = "Ready")
-                    }
-
-                } catch (e: Exception) {
-                    _coffeeMakerState.update {
-                        it.copy(status = "Error", detailedMessage = "Brew failed: ${e.localizedMessage}", canBrewDrink = true)
-                    }
-                } finally {
-                    _coffeeMakerState.update { it.copy(canStopBrew = false) }
-                }
+        // D. Milk
+        if (milkNeeded > 0) {
+            val currentMilk = _milkLevels.value[effectiveSettings.milkBase] ?: 0
+            if (currentMilk < milkNeeded) {
+                _coffeeMakerState.update { it.copy(
+                    status = "ERROR_MILK_LOW",
+                    detailedMessage = "ALERT: Low on ${effectiveSettings.milkBase.displayName}!",
+                    hasMaintenanceAlert = true
+                )}
+                return false
             }
         }
+
+        // E. Tea
+        if (teaNeeded > 0) {
+            val currentTea = _teaLevels.value[effectiveSettings.teaType] ?: 0
+            if (currentTea < teaNeeded) {
+                _coffeeMakerState.update { it.copy(
+                    status = "ERROR_TEA_LOW",
+                    detailedMessage = "ALERT: Refill ${effectiveSettings.teaType.displayName}!",
+                    hasMaintenanceAlert = true
+                )}
+                return false
+            }
+        }
+
+        // F. Chocolate
+        if (chocolateNeeded > 0) {
+            val currentChoco = _chocolateLevels.value[effectiveSettings.chocolateType] ?: 0
+            if (currentChoco < chocolateNeeded) {
+                _coffeeMakerState.update { it.copy(
+                    status = "ERROR_CHOCO_LOW",
+                    detailedMessage = "ALERT: Refill ${effectiveSettings.chocolateType.displayName}!",
+                    hasMaintenanceAlert = true
+                )}
+                return false
+            }
+        }
+
+        // G. Syrup
+        if (syrupNeeded > 0) {
+            val currentSyrup = _syrupLevels.value[effectiveSettings.syrupType] ?: 0
+            if (currentSyrup < syrupNeeded) {
+                _coffeeMakerState.update { it.copy(
+                    status = "ERROR_SYRUP_LOW",
+                    detailedMessage = "ALERT: Refill ${effectiveSettings.syrupType.displayName}!",
+                    hasMaintenanceAlert = true
+                )}
+                return false
+            }
+        }
+
+        // H. Sugar
+        if (sugarNeeded > 0) {
+            val currentSugar = _sugarLevels.value[effectiveSettings.sugarType] ?: 0
+            if (currentSugar < sugarNeeded) {
+                _coffeeMakerState.update { it.copy(
+                    status = "ERROR_SUGAR_LOW",
+                    detailedMessage = "ALERT: Refill ${effectiveSettings.sugarType.displayName}!",
+                    hasMaintenanceAlert = true
+                )}
+                return false
+            }
+        }
+
+
+        // --- 4. CONSUME RESOURCES (Update the Maps) ---
+
+        // Basics
+        _waterLevel.update { (it - waterNeeded).coerceAtLeast(0) }
+        if (beansNeeded > 0) _beansLevel.update { (it - beansNeeded).coerceAtLeast(0) }
+
+        // Milk
+        if (milkNeeded > 0) {
+            _milkLevels.update { map ->
+                val current = map[effectiveSettings.milkBase] ?: 0
+                map.toMutableMap().apply { this[effectiveSettings.milkBase] = (current - milkNeeded).coerceAtLeast(0) }
+            }
+        }
+
+        // Tea
+        if (teaNeeded > 0) {
+            _teaLevels.update { map ->
+                val current = map[effectiveSettings.teaType] ?: 0
+                map.toMutableMap().apply { this[effectiveSettings.teaType] = (current - teaNeeded).coerceAtLeast(0) }
+            }
+        }
+
+        // Chocolate
+        if (chocolateNeeded > 0) {
+            _chocolateLevels.update { map ->
+                val current = map[effectiveSettings.chocolateType] ?: 0
+                map.toMutableMap().apply { this[effectiveSettings.chocolateType] = (current - chocolateNeeded).coerceAtLeast(0) }
+            }
+        }
+
+        // Syrup
+        if (syrupNeeded > 0) {
+            _syrupLevels.update { map ->
+                val current = map[effectiveSettings.syrupType] ?: 0
+                map.toMutableMap().apply { this[effectiveSettings.syrupType] = (current - syrupNeeded).coerceAtLeast(0) }
+            }
+        }
+
+        // Sugar
+        if (sugarNeeded > 0) {
+            _sugarLevels.update { map ->
+                val current = map[effectiveSettings.sugarType] ?: 0
+                map.toMutableMap().apply { this[effectiveSettings.sugarType] = (current - sugarNeeded).coerceAtLeast(0) }
+            }
+        }
+
+        // --- 5. START THE PROCESS ---
+        val displayName = drinkName ?: if (drinkType == DrinkType.CUSTOM) {
+            "Custom ${effectiveSettings.baseType.name.lowercase().capitalize()}"
+        } else {
+            drinkType.displayName
+        }
+
+        _coffeeMakerState.update {
+            it.copy(
+                status = "Starting...",
+                canBrewDrink = false,
+                canStopBrew = true,
+                primaryMessage = "Making your $displayName!",
+                detailedMessage = "Initializing..."
+            )
+        }
+
+        brewJob = CoroutineScope(Dispatchers.Default).launch {
+            try {
+                val brewSteps = getBrewSteps(effectiveSettings)
+
+                for (step in brewSteps) {
+                    _coffeeMakerState.update {
+                        it.copy(status = step.message, detailedMessage = step.message)
+                    }
+                    delay(step.durationMs.milliseconds)
+                }
+
+                _coffeeMakerState.update {
+                    it.copy(
+                        status = "Done",
+                        primaryMessage = "Enjoy!",
+                        detailedMessage = "Your $displayName is ready."
+                    )
+                }
+
+                _groundsBinLevel.update { (it + groundsSpaceNeeded).coerceAtMost(100) }
+
+                delay(4000)
+                _coffeeMakerState.update {
+                    it.copy(status = "Ready", canBrewDrink = true, detailedMessage = "Ready to brew.", primaryMessage = "Ready")
+                }
+
+            } catch (e: Exception) {
+                _coffeeMakerState.update {
+                    it.copy(status = "Error", detailedMessage = "Brew failed: ${e.localizedMessage}", canBrewDrink = true)
+                }
+            } finally {
+                _coffeeMakerState.update { it.copy(canStopBrew = false) }
+            }
+        }
+        return true
     }
+
 
     override fun stopBrew() {
         brewJob?.cancel()

@@ -38,41 +38,43 @@ class CoffeeMakerViewModel(
     fun togglePower() { coffeeMakerRepository.togglePower() }
 
     fun startBrew(drinkType: DrinkType, customSettings: BrewSettings?, specificName: String? = null) {
-        coffeeMakerRepository.startBrew(drinkType, customSettings, specificName)
+        val isBrewing =coffeeMakerRepository.startBrew(drinkType, customSettings, specificName)
 
-        // Add to history logic
-        val currentUserId = authRepository.getCurrentUserId()
-        if (currentUserId != null) {
-            viewModelScope.launch {
-                val settingsToSave = customSettings ?: BrewSettings(
-                    strength = drinkType.defaultStrength,
-                    coffeeShotSize = drinkType.defaultCoffeeShotSize,
-                    milkStyle = drinkType.defaultMilkStyle,
-                    temperature = drinkType.defaultTemperature,
-                    syrupType = SyrupType.NONE,
-                    syrupPumps = 0,
-                    sugarAmount = 0
-                )
+        if (isBrewing) {
+            // Add to history logic
+            val currentUserId = authRepository.getCurrentUserId()
+            if (currentUserId != null) {
+                viewModelScope.launch {
+                    val settingsToSave = customSettings ?: BrewSettings(
+                        strength = drinkType.defaultStrength,
+                        coffeeShotSize = drinkType.defaultCoffeeShotSize,
+                        milkStyle = drinkType.defaultMilkStyle,
+                        temperature = drinkType.defaultTemperature,
+                        syrupType = SyrupType.NONE,
+                        syrupPumps = 0,
+                        sugarAmount = 0
+                    )
 
-                val finalName = when {
-                    // specific name was passed (ie morning latte from favorites)
-                    !specificName.isNullOrBlank() -> specificName
+                    val finalName = when {
+                        // specific name was passed (ie morning latte from favorites)
+                        !specificName.isNullOrBlank() -> specificName
 
-                    // custom drink with no name
-                    drinkType == DrinkType.CUSTOM && customSettings != null -> {
-                        val base = customSettings.baseType.name.lowercase().capitalizeWords()
-                        "Custom $base"
+                        // custom drink with no name
+                        drinkType == DrinkType.CUSTOM && customSettings != null -> {
+                            val base = customSettings.baseType.name.lowercase().capitalizeWords()
+                            "Custom $base"
+                        }
+
+                        else -> drinkType.displayName // default name
                     }
-
-                    else -> drinkType.displayName // default name
+                    val historyItem = BrewHistoryItem(
+                        userId = currentUserId,
+                        drinkName = finalName,
+                        settings = settingsToSave,
+                        timestamp = System.currentTimeMillis()
+                    )
+                    historyRepository.addHistoryItem(historyItem)
                 }
-                val historyItem = BrewHistoryItem(
-                    userId = currentUserId,
-                    drinkName = finalName,
-                    settings = settingsToSave,
-                    timestamp = System.currentTimeMillis()
-                )
-                historyRepository.addHistoryItem(historyItem)
             }
         }
     }

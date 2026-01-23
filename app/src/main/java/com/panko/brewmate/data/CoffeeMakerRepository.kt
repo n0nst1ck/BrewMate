@@ -34,7 +34,7 @@ interface CoffeeMakerRepository {
 
     // --- Commands ---
     fun togglePower()
-    fun startBrew(drinkType: DrinkType, customSettings: BrewSettings?, drinkName: String? = null)
+    fun startBrew(drinkType: DrinkType, customSettings: BrewSettings?, drinkName: String? = null): Boolean
     fun stopBrew()
     fun setSelectedCoffeeType(type: DrinkType) // To set the main coffee type (e.g., Espresso, Latte)
     fun setCustomStrength(strength: String)
