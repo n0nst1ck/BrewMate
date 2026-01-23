@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -54,14 +54,16 @@ fun HistoryScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(historyList, key = { it.id }) { item ->
+                    // Check if this specific configuration exists in favorites
                     val isAlreadyFavorite = favorites.any { it.settings == item.settings }
 
                     HistoryItemCard(
                         item = item,
                         isAlreadyFavorite = isAlreadyFavorite,
                         onFavoriteClicked = {
-                            if (isAlreadyFavorite){
-                                Toast.makeText(context, "Already in your favorites!", Toast.LENGTH_LONG).show()
+                            if (isAlreadyFavorite) {
+                                // Short toast for better UX
+                                Toast.makeText(context, "Already in your favorites!", Toast.LENGTH_SHORT).show()
                             } else {
                                 selectedHistoryItem = item
                                 showDialog = true
@@ -110,7 +112,11 @@ fun HistoryItemCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = item.drinkName, style = MaterialTheme.typography.titleLarge)
-                Text(text = dateString, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = dateString,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Text(
                     text = "${item.settings.strength} | ${item.settings.milkStyle.name.lowercase()}",
                     style = MaterialTheme.typography.bodySmall
@@ -120,7 +126,7 @@ fun HistoryItemCard(
             // The "Heart" button to save this specific past brew
             IconButton(onClick = onFavoriteClicked) {
                 Icon(
-                    imageVector = if (isAlreadyFavorite) {Icons.Filled.Favorite} else {Icons.Filled.FavoriteBorder},
+                    imageVector = if (isAlreadyFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                     contentDescription = "Save to Favorites",
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -137,6 +143,7 @@ fun SaveHistoryAsFavoriteDialog(
     onSuccess: () -> Unit
 ) {
     var name by remember { mutableStateOf(item.drinkName) } // Default to the original name
+    val context = LocalContext.current // Need context for error toast
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -154,10 +161,18 @@ fun SaveHistoryAsFavoriteDialog(
         },
         confirmButton = {
             Button(
+                enabled = name.isNotBlank(),
                 onClick = {
-                    favoritesViewModel.saveFavorite(name, item.settings)
-                    onSuccess()
-                    onDismiss()
+                    // Check the boolean return value!
+                    val success = favoritesViewModel.saveFavorite(name, item.settings)
+
+                    if (success) {
+                        onSuccess()
+                        onDismiss()
+                    } else {
+                        // Show error if it's a duplicate
+                        Toast.makeText(context, "Duplicate recipe! You already have this.", Toast.LENGTH_SHORT).show()
+                    }
                 }
             ) {
                 Text("Save")

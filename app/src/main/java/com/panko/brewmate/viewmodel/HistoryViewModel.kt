@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.panko.brewmate.data.AuthRepository
 import com.panko.brewmate.data.HistoryRepository
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.stateIn
 
@@ -19,6 +20,9 @@ class HistoryViewModel(
         emptyFlow()
     } else {
         historyRepository.getHistory(userId)
+            .catch {
+                emit(emptyList())
+            }
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),

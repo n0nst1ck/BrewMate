@@ -59,7 +59,7 @@ fun ConfigureBrewTypeScreen(
                         details = "${favorite.settings.strength} | ${favorite.settings.milkStyle.name}",
                         onSelect = {
                             viewModel.setBrewSettingsFromFavorite(favorite.settings, favorite.name)
-                            viewModel.startBrew(DrinkType.CUSTOM, favorite.settings)
+                            viewModel.startBrew(DrinkType.CUSTOM, favorite.settings, favorite.name)
                             navController.popBackStack(BrewMateDestinations.HOME_ROUTE, inclusive = false)
                         },
                         onEdit = {

@@ -157,10 +157,7 @@ fun MainAppScaffold(
                     onLogout = {
                         authViewModel.logout()
                      // Clear Firebase session
-                            // Navigate back to Auth screen and clear history
-                            navController.navigate(BrewMateDestinations.AUTH_ROUTE) {
-                                popUpTo(navController.graph.id) { inclusive = true }
-                            }
+                        onLogout()
                     }
                 )
             }

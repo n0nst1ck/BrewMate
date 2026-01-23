@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager // 👈 Needed for the keyboard fix
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +26,7 @@ import com.panko.brewmate.model.ScheduledBrew
 import com.panko.brewmate.viewmodel.CoffeeMakerViewModel
 import com.panko.brewmate.viewmodel.FavoritesViewModel
 import com.panko.brewmate.viewmodel.SchedulingViewModel
+import kotlinx.coroutines.delay
 import java.time.DayOfWeek
 import java.util.Locale
 import java.time.format.TextStyle
@@ -38,10 +40,9 @@ fun RecurrenceSelector(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        DayOfWeek.values().forEach { day ->
+        DayOfWeek.entries.forEach { day ->
             val isSelected = selectedDays.contains(day)
 
-            // Visual tweak: Use FilterChip style logic for a cleaner look
             OutlinedButton(
                 onClick = { onDaySelected(day) },
                 shape = MaterialTheme.shapes.extraSmall,
@@ -81,16 +82,21 @@ fun SchedulingScreen(
     val schedules by schedulingViewModel.scheduledBrews.collectAsState()
     val favorites by favoritesViewModel.favoriteDrinks.collectAsState()
 
-    // 2. Permission Handling (Auto-ask on Android 13+)
+    // 2. Permission Handling
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-        onResult = { /* We don't need to do anything if granted, it just works */ }
+        onResult = { }
     )
 
+    // 👇 THE KEYBOARD KILLER 🥷
+    // We wait 100ms for the TimeInput to try and grab focus, then we take it away.
+    val focusManager = LocalFocusManager.current
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+        delay(100) // Small delay is the secret!
+        focusManager.clearFocus()
     }
 
     // 3. Form State
@@ -141,9 +147,9 @@ fun SchedulingScreen(
         Text("New Schedule", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // A. TIME INPUT
+        // A. TIME INPUT (RESTORED!)
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            TimeInput(state = timeState)
+            TimeInput(state = timeState) // 👈 Back to the text boxes you prefer
         }
 
         Spacer(modifier = Modifier.height(16.dp))

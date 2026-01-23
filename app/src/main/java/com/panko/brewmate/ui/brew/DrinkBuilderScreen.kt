@@ -413,6 +413,7 @@ fun SaveFavoriteDialog(
     onSaveComplete: (String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -422,9 +423,15 @@ fun SaveFavoriteDialog(
                 Text("Enter a name to save this recipe for later:")
                 OutlinedTextField(
                     value = name,
-                    onValueChange = { name = it },
+                    onValueChange = {
+                        name = it
+                        errorMsg = null
+                                    },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    supportingText = {
+                        if (errorMsg != null) Text(errorMsg!!, color = MaterialTheme.colorScheme.error)
+                    }
                 )
             }
         },
@@ -432,9 +439,13 @@ fun SaveFavoriteDialog(
             Button(
                 enabled = name.isNotBlank(),
                 onClick = {
-                    favoritesViewModel.saveFavorite(name, settings)
-                    onSaveComplete(name)
-                    onDismiss()
+                    val success = favoritesViewModel.saveFavorite(name, settings)
+                    if (success){
+                        onSaveComplete(name)
+                        onDismiss()
+                    } else {
+                        errorMsg = "This recipe already exists!"
+                    }
                 }
             ) {
                 Text("Save & Brew")

@@ -9,6 +9,7 @@ import com.panko.brewmate.model.ScheduledBrew
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -31,6 +32,9 @@ class SchedulingViewModel(
             flowOf(emptyList()) // If no user, show empty list
         } else {
             schedulingRepository.getScheduledBrews(userId)
+                .catch {
+                    emit(emptyList())
+                }
         }
     }.stateIn(
         scope = viewModelScope,

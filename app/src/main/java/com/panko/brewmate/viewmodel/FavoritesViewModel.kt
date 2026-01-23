@@ -7,6 +7,7 @@ import com.panko.brewmate.data.FavoritesRepository
 import com.panko.brewmate.model.BrewSettings
 import com.panko.brewmate.model.FavoriteDrink
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -23,23 +24,30 @@ class FavoritesViewModel(
         emptyFlow()
     } else {
         favoritesRepository.getFavorites(userId)
+            .catch { emit(emptyList()) }
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
         emptyList()
     )
 
-    fun saveFavorite(name: String, settings: BrewSettings) {
-        viewModelScope.launch {
-            // Create the new drink model
-            val newDrink = FavoriteDrink(
-                userId = userId,
-                name = name,
-                settings = settings
-            )
-            favoritesRepository.saveFavorite(newDrink)
-            // Error handling logic (omitted for brevity)
+    fun saveFavorite(name: String, settings: BrewSettings): Boolean {
+        val currentFavorites = favoriteDrinks.value
+
+        // Check if any favorite has the exact same settings
+        val isDuplicate = currentFavorites.any { it.settings == settings }
+
+        if (isDuplicate) {
+            return false
         }
+
+        // Save
+        val newFavorite = FavoriteDrink(userId = userId, name = name, settings = settings)
+
+        viewModelScope.launch {
+            favoritesRepository.saveFavorite(newFavorite)
+        }
+        return true
     }
 
     fun deleteFavorite(drinkId: String) {
