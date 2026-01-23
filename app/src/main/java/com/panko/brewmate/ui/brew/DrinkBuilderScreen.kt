@@ -122,7 +122,7 @@ fun DrinkBuilderScreen(
                     onValueChange = {
                         viewModel.updateBrewSettings(customSettings.copy(steepTime = it.toLong()))
                     },
-                    valueRange = 60f..600f, // 1 min to 10 mins
+                    valueRange = 0f..600f, // 1 min to 10 mins
                     steps = 18
                 )
             }

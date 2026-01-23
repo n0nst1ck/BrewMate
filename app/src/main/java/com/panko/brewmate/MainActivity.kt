@@ -31,6 +31,7 @@ import com.panko.brewmate.data.FirebaseAuthRepository
 import com.panko.brewmate.data.FirebaseFavoritesRepository
 import com.panko.brewmate.data.FirebaseHistoryRepository
 import com.panko.brewmate.data.HistoryRepository
+import com.panko.brewmate.data.InventoryStorage
 import com.panko.brewmate.data.SchedulingRepository
 import com.panko.brewmate.viewmodel.AuthViewModel
 import com.panko.brewmate.ui.BrewMateApp
@@ -52,7 +53,8 @@ class MainActivity : ComponentActivity() {
 
         // 1. Dependency Instantiation
         val scheduler: Scheduler = SystemScheduler()
-        val coffeeMakerRepository: CoffeeMakerRepository = SimulatedCoffeeMaker(scheduler)
+        val inventoryStorage = InventoryStorage(applicationContext)
+        val coffeeMakerRepository: CoffeeMakerRepository = SimulatedCoffeeMaker(scheduler, inventoryStorage)
         authRepository = FirebaseAuthRepository() // Concrete Firebase instance
         val authInstance = FirebaseAuth.getInstance()
         val firestoreInstance: FirebaseFirestore = FirebaseFirestore.getInstance()
