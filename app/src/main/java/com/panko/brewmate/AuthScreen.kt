@@ -1,7 +1,5 @@
 package com.panko.brewmate
 
-// AuthScreen.kt
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,20 +11,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.panko.brewmate.viewmodel.AuthUiState
 import com.panko.brewmate.viewmodel.AuthViewModel
 
-// You'll need to set up dependency injection (Hilt/Koin)
-// or use a custom factory for the real app, but viewModel()
-// works for simple prototypes.
-
 @Composable
 fun AuthScreen(
     authViewModel: AuthViewModel = viewModel(),
-    onAuthSuccess: () -> Unit // Callback to navigate away on success
+    onAuthSuccess: () -> Unit
 ) {
     // Collect states from the ViewModel
     val uiState by authViewModel.uiState.collectAsState()
     val inputState by authViewModel.inputState.collectAsState()
 
-    // --- Effect for Success ---
+    // Effect for Success
     LaunchedEffect(uiState) {
         if (uiState == AuthUiState.Success) {
             onAuthSuccess()

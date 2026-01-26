@@ -28,7 +28,7 @@ fun BrewMateApp(
     viewModelFactory: ViewModelProvider.Factory,
     themeViewModel: ThemeViewModel
 ) {
-    // 1. Initial State Check
+    // Initial State Check
     val isLoggedIn = authRepository.getCurrentUserId() != null
     val startDestination = if (isLoggedIn) {
         BrewMateDestinations.MAIN_APP_GRAPH // Logged in, go to machine
@@ -38,14 +38,14 @@ fun BrewMateApp(
 
     val navController = rememberNavController()
 
-    // 2. Custom CompositionLocal for ViewModel Factory (simplifies usage in child screens)
+    // Custom CompositionLocal for ViewModel Factory
     CompositionLocalProvider(LocalViewModelFactory provides viewModelFactory) {
 
         NavHost(
             navController = navController,
             startDestination = startDestination
         ) {
-            // --- AUTHENTICATION ROUTE ---
+            // Authentication Route
             composable(BrewMateDestinations.AUTH_ROUTE) {
                 AuthScreen(
                     authViewModel = authViewModel,
@@ -58,7 +58,7 @@ fun BrewMateApp(
                 )
             }
 
-            // --- MAIN APPLICATION GRAPH ---
+            // Main application graph
             composable(BrewMateDestinations.MAIN_APP_GRAPH) {
                 MainAppScaffold(
                     coffeeMakerViewModel = coffeeMakerViewModel,

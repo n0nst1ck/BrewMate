@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 
 class ThemeViewModel : ViewModel() {
     // True = Dark, False = Light
-    // Defaulting to false for now, or you could pass system default in constructor
+    // When used, it gets the system default
     var isDarkTheme = mutableStateOf(false)
         private set
 

@@ -34,7 +34,7 @@ class AuthViewModel(
     private val _inputState = MutableStateFlow(AuthInputState())
     val inputState: StateFlow<AuthInputState> = _inputState.asStateFlow()
 
-    // --- State Update Functions ---
+    // State Update Functions
 
     fun onEmailChange(newEmail: String) {
         _inputState.update { it.copy(email = newEmail) }
@@ -53,7 +53,7 @@ class AuthViewModel(
         _uiState.update { AuthUiState.Idle }
     }
 
-    // --- Authentication Logic ---
+    // Authentication Logic
 
     fun authenticate() {
         // Simple client-side validation

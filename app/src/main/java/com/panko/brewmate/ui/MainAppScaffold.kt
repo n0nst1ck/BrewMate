@@ -90,7 +90,6 @@ fun MainAppScaffold(
                     IconButton(
                         onClick = { navController.navigate(BrewMateDestinations.SETTINGS_ROUTE) }
                     ) {
-                        // Import androidx.compose.material.icons.filled.Settings
                         Icon(Icons.Filled.Settings, contentDescription = "Settings")
                     }
                 }
@@ -124,11 +123,11 @@ fun MainAppScaffold(
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            // The start destination can remain HOME_ROUTE
+            // Starting destination set to home
             startDestination = BrewMateDestinations.HOME_ROUTE,
             modifier = Modifier.padding(paddingValues)
         ) {
-            // --- 1. BOTTOM BAR TAB DESTINATIONS ---
+            // Bottom Bar Tab Destinations
 
             composable(BrewMateDestinations.HOME_ROUTE) {
                 HomeScreen(viewModel = coffeeMakerViewModel, navController = navController)
@@ -140,8 +139,6 @@ fun MainAppScaffold(
 
             composable(BrewMateDestinations.SCHEDULING_ROUTE) {
                 SchedulingScreen(
-                    // Note: You should decide which VM handles the initial drink selection logic.
-                    // For now, keep them all.
                     coffeeMakerViewModel = coffeeMakerViewModel,
                     schedulingViewModel = schedulingViewModel,
                     favoritesViewModel = favoritesViewModel,
@@ -156,14 +153,13 @@ fun MainAppScaffold(
                     authViewModel = authViewModel,
                     onLogout = {
                         authViewModel.logout()
-                     // Clear Firebase session
+                        // Clear Firebase session
                         onLogout()
                     }
                 )
             }
 
-            // 2. THE NEW "DRINKS" MANAGEMENT HUB TAB
-            // This is the new entry point for Customization, Presets, and Favorites.
+            // Favorites is used for managing favorite drinks
             composable(BrewMateDestinations.FAVORITES_ROUTE) {
                 FavoritesScreen(
                     navController = navController,
@@ -173,8 +169,9 @@ fun MainAppScaffold(
             }
 
 
-            // --- 3. INTERNAL FLOW/FORM DESTINATIONS (Accessed only from the Management Hub) ---
+            // Internal flow destinations
 
+            // Accessible from home page, on brew button clicked
             composable(BrewMateDestinations.CONFIGURE_BREW_TYPE_ROUTE) {
                 ConfigureBrewTypeScreen(
                     viewModel = coffeeMakerViewModel,
@@ -183,6 +180,7 @@ fun MainAppScaffold(
                 )
             }
 
+            // Accessible from configure brew type route, on custom drink clicked
             composable(BrewMateDestinations.CUSTOMIZE_BREW_ROUTE) {
                 DrinkBuilderScreen(
                     viewModel = coffeeMakerViewModel,
@@ -192,6 +190,7 @@ fun MainAppScaffold(
                 )
             }
 
+            // Accessible from favorites route, on create recipe clicked
             composable(BrewMateDestinations.CREATE_FAVORITE_ROUTE) {
                 DrinkBuilderScreen(
                     viewModel = coffeeMakerViewModel,
@@ -201,6 +200,7 @@ fun MainAppScaffold(
                 )
             }
 
+            // On bottom bar tab, on history clicked
             composable(BrewMateDestinations.HISTORY_ROUTE) {
                 HistoryScreen(
                     historyViewModel = historyViewModel,

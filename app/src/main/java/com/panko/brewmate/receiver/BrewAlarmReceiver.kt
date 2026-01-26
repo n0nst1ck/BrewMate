@@ -57,16 +57,15 @@ class BrewAlarmReceiver : BroadcastReceiver() {
         val channelId = "brew_alarm_channel"
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Scheduled Brews",
-                NotificationManager.IMPORTANCE_HIGH // High Priority is necessary to ensure it rings
+        // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+        val channel = NotificationChannel(
+            channelId,
+            "Scheduled Brews",
+            NotificationManager.IMPORTANCE_HIGH // High Priority is necessary to ensure it rings
             ).apply {
                 description = "Notifications for scheduled coffee"
             }
-            notificationManager.createNotificationChannel(channel)
-        }
+        notificationManager.createNotificationChannel(channel)
 
         // Intent to open App when clicked
         val contentIntent = Intent(context, MainActivity::class.java)
@@ -74,7 +73,7 @@ class BrewAlarmReceiver : BroadcastReceiver() {
             context, 0, contentIntent, PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Build Notification using a SYSTEM icon to be safe
+        // Notification for the scheduled brew
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("BrewMate Ready!")

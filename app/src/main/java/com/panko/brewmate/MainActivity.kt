@@ -1,6 +1,5 @@
 package com.panko.brewmate
 
-import com.panko.brewmate.data.SystemSchedulerInterface
 import com.panko.brewmate.data.FirebaseSchedulingRepository
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -44,14 +43,14 @@ import com.panko.brewmate.viewmodel.ThemeViewModel
 
 class MainActivity : ComponentActivity() {
 
-    // You can define dependencies here to make them accessible across the activity
+    // Dependencies are defined here to make them accessible across the activity
     private lateinit var authRepository: AuthRepository
     private lateinit var viewModelFactory: ViewModelProvider.Factory
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Dependency Instantiation
+        // Dependency Instantiation
         val scheduler: Scheduler = SystemScheduler()
         val inventoryStorage = InventoryStorage(applicationContext)
         val coffeeMakerRepository: CoffeeMakerRepository = SimulatedCoffeeMaker(scheduler, inventoryStorage)
@@ -120,7 +119,7 @@ class MainActivity : ComponentActivity() {
                     val favoritesViewModel: FavoritesViewModel = viewModel(factory = viewModelFactory)
                     val historyViewModel: HistoryViewModel = viewModel(factory = viewModelFactory)
 
-                    // 3. Call the Root Navigator
+                    // Call the Root Navigator
                     BrewMateApp(
                         coffeeMakerViewModel = coffeeMakerViewModel,
                         authViewModel = authViewModel,

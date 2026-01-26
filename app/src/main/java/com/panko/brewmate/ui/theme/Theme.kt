@@ -1,6 +1,5 @@
 package com.panko.brewmate.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -15,10 +14,10 @@ import androidx.compose.ui.platform.LocalContext
 private val DarkColorScheme = darkColorScheme(
     primary = Caramel,          // Buttons in dark mode
     onPrimary = CoffeeDark,     // Text on buttons
-    secondary = LatteLight,     // Secondary elements (FABs, highlights)
-    tertiary = CoffeeMedium,
-    background = CoffeeDark,    // The main screen background
-    surface = CoffeeMedium,     // Cards and sheets background
+    secondary = LatteLight,     // Secondary elements
+    tertiary = CoffeeMedium,    // Highlights
+    background = CoffeeDark,    // Main screen background
+    surface = CoffeeMedium,     // Cards background
     onBackground = Cream,       // Text on background
     onSurface = Cream,           // Text on cards
     secondaryContainer = CoffeeMedium,
@@ -26,13 +25,13 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = CoffeePrimary,    // Main buttons (Espresso color)
+    primary = CoffeePrimary,    // Main buttons
     onPrimary = Color.White,    // Text on main buttons
     secondary = CoffeeMedium,   // Secondary accents
     tertiary = Caramel,         // Highlights
-    background = Foam,          // Main screen background (Off-white)
+    background = Foam,          // Main screen background
     surface = Color.White,      // Cards background
-    onBackground = CoffeeDark,  // Text on background (Dark brown text)
+    onBackground = CoffeeDark,  // Text on background
     onSurface = CoffeeDark,      // Text on cards
     secondaryContainer = LatteLight,
     onSecondaryContainer = CoffeeDark

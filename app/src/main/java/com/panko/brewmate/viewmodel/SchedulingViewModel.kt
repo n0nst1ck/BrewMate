@@ -21,12 +21,10 @@ class SchedulingViewModel(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    // --- 1. DEFINE THE MISSING FLOW HERE ---
-    // This holds the current User ID and notifies the list when it changes.
     private val currentUserIdFlow = MutableStateFlow(authRepository.getCurrentUserId())
 
-    // --- 2. REACTIVE LIST ---
-    // Whenever currentUserIdFlow changes, this automatically switches to the correct user's list.
+    // Reactive List
+    // Whenever currentUserIdFlow changes, this automatically switches to the correct user's list
     val scheduledBrews = currentUserIdFlow.flatMapLatest { userId ->
         if (userId.isNullOrBlank()) {
             flowOf(emptyList()) // If no user, show empty list
@@ -42,26 +40,15 @@ class SchedulingViewModel(
         initialValue = emptyList()
     )
 
-    // Helper to refresh ID (call this from UI LaunchedEffect)
-    fun refreshUser() {
-        val userId = authRepository.getCurrentUserId()
-        currentUserIdFlow.value = userId
-        Log.d("DEBUG_BREW", "ViewModel refreshed. Current User: '$userId'")
-    }
-
-    // --- 3. ADD SCHEDULE WITH LOGS ---
+    // Used to add a schedule to database
     fun addSchedule(schedule: ScheduledBrew) {
         viewModelScope.launch {
-            Log.d("DEBUG_BREW", "1. Button Clicked! Starting addSchedule...")
-
             val userId = authRepository.getCurrentUserId()
-            Log.d("DEBUG_BREW", "2. User ID found: '$userId'")
 
             // Update the flow so the list knows we are active
             currentUserIdFlow.value = userId
 
             if (userId.isNullOrBlank()) {
-                Log.e("DEBUG_BREW", "❌ ERROR: User ID is blank! Cannot save.")
                 return@launch
             }
 
@@ -69,24 +56,15 @@ class SchedulingViewModel(
                 // Attach the real user ID to the schedule
                 val finalSchedule = schedule.copy(userID = userId)
 
-                Log.d("DEBUG_BREW", "3. Saving to Repo: ${finalSchedule.id} at ${finalSchedule.hour}:${finalSchedule.minute}")
-
                 // Call the repository
-                val result = schedulingRepository.scheduleBrew(finalSchedule)
-
-                result.onSuccess {
-                    Log.d("DEBUG_BREW", "✅ SUCCESS: Schedule saved & Alarm set!")
-                }.onFailure { e ->
-                    Log.e("DEBUG_BREW", "❌ FAIL: Repository threw an error", e)
-                }
-
+                schedulingRepository.scheduleBrew(finalSchedule)
             } catch (e: Exception) {
                 Log.e("DEBUG_BREW", "❌ CRITICAL ERROR: ViewModel crashed", e)
             }
         }
     }
 
-    // --- 4. DELETE SCHEDULE ---
+    // Used to delete a schedule from database
     fun deleteSchedule(schedule: ScheduledBrew) {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId()

@@ -16,25 +16,27 @@ class CoffeeMakerViewModel(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    // --- State & Essentials ---
+    // State flow for the current state of the coffee maker
     val coffeeMakerState: StateFlow<CoffeeMakerState> = coffeeMakerRepository.coffeeMakerState
+
+    // General Levels
     val beansLevel: StateFlow<Int> = coffeeMakerRepository.beansLevel
     val waterLevel: StateFlow<Int> = coffeeMakerRepository.waterLevel
     val groundsBinLevel: StateFlow<Int> = coffeeMakerRepository.groundsBinLevel
 
-    // --- 🆕 INVENTORY MAPS (Fixed Access) ---
-    // We access 'coffeeMakerRepository' (the instance), NOT 'CoffeeMakerRepository' (the class)
+    // Levels that require maps
+    // NOTE: We use 'coffeeMakerRepository' (the instance), NOT 'CoffeeMakerRepository' (the class)
     val milkLevels: StateFlow<Map<MilkBase, Int>> = coffeeMakerRepository.milkLevels
     val syrupLevels: StateFlow<Map<SyrupType, Int>> = coffeeMakerRepository.syrupLevels
     val sugarLevels: StateFlow<Map<SugarType, Int>> = coffeeMakerRepository.sugarLevels
     val teaLevels: StateFlow<Map<TeaType, Int>> = coffeeMakerRepository.teaLevels
     val chocolateLevels: StateFlow<Map<ChocolateType, Int>> = coffeeMakerRepository.chocolateLevels
 
-    // --- Settings ---
+    // Settings
     val selectedDrinkType: StateFlow<DrinkType> = coffeeMakerRepository.selectedDrinkType
     val customBrewSettings: StateFlow<BrewSettings> = coffeeMakerRepository.customBrewSettings
 
-    // --- Actions ---
+    // Actions
     fun togglePower() { coffeeMakerRepository.togglePower() }
 
     fun startBrew(drinkType: DrinkType, customSettings: BrewSettings?, specificName: String? = null) {
@@ -81,7 +83,7 @@ class CoffeeMakerViewModel(
 
     fun stopBrew() { coffeeMakerRepository.stopBrew() }
 
-    // --- Configuration ---
+    //  Configuration
     fun setSelectedCoffeeType(type: DrinkType) { coffeeMakerRepository.setSelectedCoffeeType(type) }
     fun setCustomStrength(strength: String) { coffeeMakerRepository.setCustomStrength(strength) }
     fun setCustomCoffeeShotSize(size: CoffeeShotSize) { coffeeMakerRepository.setCustomCoffeeShotSize(size) }
@@ -99,13 +101,13 @@ class CoffeeMakerViewModel(
         coffeeMakerRepository.setBrewSettingsFromFavorite(settings, drinkName)
     }
 
-    // --- Maintenance / Refills ---
+    // Maintenance / Refills
     fun addBeans() { coffeeMakerRepository.addBeans() }
     fun addWater() { coffeeMakerRepository.addWater() }
     fun emptyGroundsBin() { coffeeMakerRepository.emptyGroundsBin() }
     fun clearAlert() { coffeeMakerRepository.clearMaintenanceAlert() }
 
-    // --- 🆕 SPECIFIC REFILL ACTIONS ---
+    // Refill actions for map based levels
     fun refillMilk(type: MilkBase) = coffeeMakerRepository.refillMilk(type)
     fun refillSyrup(type: SyrupType) = coffeeMakerRepository.refillSyrup(type)
     fun refillSugar(type: SugarType) = coffeeMakerRepository.refillSugar(type)

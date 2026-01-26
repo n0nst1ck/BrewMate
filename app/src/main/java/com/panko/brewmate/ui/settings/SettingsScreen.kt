@@ -9,7 +9,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.panko.brewmate.navigation.BrewMateDestinations
 import com.panko.brewmate.viewmodel.AuthViewModel
 import com.panko.brewmate.viewmodel.ThemeViewModel
 
@@ -41,7 +40,7 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp) // Spacing between sections
         ) {
-            // --- SECTION 1: APPEARANCE ---
+            // App Appearance Section (dark vs light theme)
             Text("Appearance", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
 
             Row(
@@ -58,10 +57,10 @@ fun SettingsScreen(
 
             Divider()
 
-            // --- SECTION 2: ACCOUNT ---
+            // Account Section
             Text("Account", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
 
-            // The Moved Logout Button
+            // Logout Button
             Button(
                 onClick = {
                     onLogout()
