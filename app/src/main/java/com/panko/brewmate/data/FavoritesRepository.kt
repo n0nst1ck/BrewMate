@@ -10,6 +10,10 @@ interface FavoritesRepository {
     // Saves a new favorite drink
     suspend fun saveFavorite(drink: FavoriteDrink): Result<Unit>
 
-    // Deletes a favorite
+    // Deletes a favorite drink
     suspend fun deleteFavorite(drinkId: String): Result<Unit>
+
+    // Updates a favorite drink
+    suspend fun updateFavorite(drink: FavoriteDrink)
 }
+

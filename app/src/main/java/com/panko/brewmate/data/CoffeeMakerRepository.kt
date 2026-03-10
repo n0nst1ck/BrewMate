@@ -52,4 +52,6 @@ interface CoffeeMakerRepository {
     fun clearMaintenanceAlert()
     fun setBrewSettingsFromFavorite(settings: BrewSettings, drinkName: String)
     fun updateBrewSettings(settings: BrewSettings)
+
+    suspend fun getMissingIngredients(settings: BrewSettings): List<String>
 }

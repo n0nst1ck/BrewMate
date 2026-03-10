@@ -49,4 +49,15 @@ class FirebaseFavoritesRepository(
         val userId = auth.currentUser?.uid ?: throw IllegalStateException("User not logged in.")
         getFavoritesCollection(userId).document(drinkId).delete().await()
     }
+
+    override suspend fun updateFavorite(drink: FavoriteDrink) {
+        try {
+            firestore.collection("users").document(drink.userId)
+                .collection("favorites").document(drink.id) // 👈 Use the exact same ID
+                .set(drink) // 👈 .set() completely overwrites the old data
+                .await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }

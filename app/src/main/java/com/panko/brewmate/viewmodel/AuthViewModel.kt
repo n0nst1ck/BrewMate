@@ -90,6 +90,8 @@ class AuthViewModel(
     }
 
     fun logout() {
-        // TO DO
+        authRepository.signOut()
+        _uiState.update { AuthUiState.Idle }
+        _inputState.update { AuthInputState() }
     }
 }

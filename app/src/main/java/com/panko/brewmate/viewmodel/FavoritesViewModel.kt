@@ -6,25 +6,26 @@ import com.panko.brewmate.data.AuthRepository
 import com.panko.brewmate.data.FavoritesRepository
 import com.panko.brewmate.model.BrewSettings
 import com.panko.brewmate.model.FavoriteDrink
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class FavoritesViewModel(
     private val favoritesRepository: FavoritesRepository,
-    authRepository: AuthRepository // Needed to get the userId
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val userId = authRepository.getCurrentUserId() ?: ""
-
-    // Live stream of all favorite drinks
-    val favoriteDrinks = if (userId.isBlank()) {
-        emptyFlow()
-    } else {
-        favoritesRepository.getFavorites(userId)
-            .catch { emit(emptyList()) }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val favoriteDrinks = authRepository.currentUserIdFlow.flatMapLatest { uid ->
+        if (uid.isNullOrBlank()) {
+            flowOf(emptyList())
+        } else {
+            favoritesRepository.getFavorites(uid).catch { emit(emptyList()) }
+        }
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
@@ -32,20 +33,40 @@ class FavoritesViewModel(
     )
 
     fun saveFavorite(name: String, settings: BrewSettings): Boolean {
-        val currentFavorites = favoriteDrinks.value
+        val uid = authRepository.getCurrentUserId()
+        if (uid.isNullOrBlank()) return false
 
-        // Check if any favorite has the exact same settings
+        val currentFavorites = favoriteDrinks.value
         val isDuplicate = currentFavorites.any { it.settings == settings }
 
-        if (isDuplicate) {
-            return false
-        }
+        if (isDuplicate) return false
 
-        // Save
-        val newFavorite = FavoriteDrink(userId = userId, name = name, settings = settings)
+        val newFavorite = FavoriteDrink(userId = uid, name = name, settings = settings)
 
         viewModelScope.launch {
             favoritesRepository.saveFavorite(newFavorite)
+        }
+        return true
+    }
+
+    fun updateFavorite(drinkId: String, newName: String, newSettings: BrewSettings): Boolean {
+        val uid = authRepository.getCurrentUserId()
+        if (uid.isNullOrBlank()) return false
+
+        val currentFavorites = favoriteDrinks.value
+        val isDuplicate = currentFavorites.any { it.id != drinkId && it.settings == newSettings }
+
+        if (isDuplicate) return false
+
+        val updatedFavorite = FavoriteDrink(
+            id = drinkId,
+            userId = uid,
+            name = newName,
+            settings = newSettings
+        )
+
+        viewModelScope.launch {
+            favoritesRepository.updateFavorite(updatedFavorite)
         }
         return true
     }

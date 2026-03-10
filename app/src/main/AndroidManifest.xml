@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
+        android:name=".BrewMateApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -31,6 +32,7 @@
             android:name=".receiver.BrewAlarmReceiver"
             android:enabled="true"
             android:exported="false" />
+        <receiver android:name=".receiver.InventoryCheckReceiver" android:exported="false" />
     </application>
 
 </manifest>

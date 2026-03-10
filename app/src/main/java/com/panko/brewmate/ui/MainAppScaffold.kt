@@ -40,6 +40,8 @@ import com.panko.brewmate.ui.settings.SettingsScreen
 import com.panko.brewmate.viewmodel.AuthViewModel
 import com.panko.brewmate.viewmodel.HistoryViewModel
 import com.panko.brewmate.viewmodel.ThemeViewModel
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -196,7 +198,24 @@ fun MainAppScaffold(
                     viewModel = coffeeMakerViewModel,
                     favoritesViewModel = favoritesViewModel,
                     navController = navController,
-                    mode = BuilderMode.RECIPE_DESIGNER
+                    mode = BuilderMode.RECIPE_DESIGNER,
+                    drinkIdToEdit = null
+                )
+            }
+
+            composable(
+                route = "${BrewMateDestinations.CREATE_FAVORITE_ROUTE}/{drinkId}",
+                arguments = listOf(navArgument("drinkId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                // Extract the ID from the URL
+                val drinkId = backStackEntry.arguments?.getString("drinkId")
+
+                DrinkBuilderScreen(
+                    viewModel = coffeeMakerViewModel,
+                    favoritesViewModel = favoritesViewModel,
+                    navController = navController,
+                    mode = BuilderMode.RECIPE_DESIGNER,
+                    drinkIdToEdit = drinkId // 👈 Pass the ID so the builder knows what to load
                 )
             }
 

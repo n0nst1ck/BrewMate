@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
@@ -88,6 +89,54 @@ class SimulatedCoffeeMaker(
     override val customBrewSettings: StateFlow<BrewSettings> = _customBrewSettings.asStateFlow()
 
     private var brewJob: Job? = null
+
+    override suspend fun getMissingIngredients(settings: BrewSettings): List<String> {
+        val missing = mutableListOf<String>()
+
+        // 1. Calculate Needs (Exactly the same as startBrew)
+        val waterNeeded = 15
+        val beansNeeded = if (settings.baseType == BaseDrinkType.COFFEE) 10 else 0
+        val groundsSpaceNeeded = if (settings.baseType == BaseDrinkType.COFFEE) 5 else 0
+        val milkNeeded = if (settings.milkBase != MilkBase.NONE) 10 else 0
+        val teaNeeded = if (settings.baseType == BaseDrinkType.TEA) 10 else 0
+        val chocolateNeeded = if (settings.baseType == BaseDrinkType.CHOCOLATE) settings.chocolateTsp * 5 else 0
+        val syrupNeeded = if (settings.syrupType != SyrupType.NONE) settings.syrupPumps * 5 else 0
+        val sugarNeeded = if (settings.sugarType != SugarType.NONE) settings.sugarAmount * 5 else 0
+
+        // 2. Check actual storage safely (using .first() waits for the database to load!)
+        if (storage.waterLevel.first() < waterNeeded) missing.add("Water")
+
+        if (beansNeeded > 0 && storage.beansLevel.first() < beansNeeded) missing.add("Coffee Beans")
+
+        if (groundsSpaceNeeded > 0 && storage.groundsLevel.first() >= (100 - groundsSpaceNeeded)) missing.add("Empty Grounds Bin") // Remind them to empty it!
+
+        if (milkNeeded > 0) {
+            val currentMilk = storage.getLevel(storage.getMilkKey(settings.milkBase)).first()
+            if (currentMilk < milkNeeded) missing.add(settings.milkBase.displayName)
+        }
+
+        if (teaNeeded > 0) {
+            val currentTea = storage.getLevel(storage.getTeaKey(settings.teaType)).first()
+            if (currentTea < teaNeeded) missing.add(settings.teaType.displayName)
+        }
+
+        if (chocolateNeeded > 0) {
+            val currentChoco = storage.getLevel(storage.getChocolateKey(settings.chocolateType)).first()
+            if (currentChoco < chocolateNeeded) missing.add(settings.chocolateType.displayName)
+        }
+
+        if (syrupNeeded > 0) {
+            val currentSyrup = storage.getLevel(storage.getSyrupKey(settings.syrupType)).first()
+            if (currentSyrup < syrupNeeded) missing.add(settings.syrupType.displayName)
+        }
+
+        if (sugarNeeded > 0) {
+            val currentSugar = storage.getLevel(storage.getSugarKey(settings.sugarType)).first()
+            if (currentSugar < sugarNeeded) missing.add(settings.sugarType.displayName)
+        }
+
+        return missing
+    }
 
     init {
         // Load saved data on start up

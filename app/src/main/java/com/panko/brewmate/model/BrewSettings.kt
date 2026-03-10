@@ -1,5 +1,7 @@
 package com.panko.brewmate.model
 
+import java.io.Serializable
+
 data class BrewSettings(
     // Base Identity
     val baseType: BaseDrinkType = BaseDrinkType.COFFEE,
@@ -29,7 +31,7 @@ data class BrewSettings(
     // Sugars
     val sugarType: SugarType = SugarType.NONE, // NEW: Type of sugar
     val sugarAmount: Int = 0 // Teaspoons/Packets
-) {
+) : Serializable {
     companion object {
         val DEFAULT = BrewSettings()
     }

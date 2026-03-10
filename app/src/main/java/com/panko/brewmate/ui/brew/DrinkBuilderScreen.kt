@@ -25,6 +25,7 @@ import com.panko.brewmate.navigation.BrewMateDestinations
 import com.panko.brewmate.viewmodel.CoffeeMakerViewModel
 import com.panko.brewmate.viewmodel.FavoritesViewModel
 import com.panko.brewmate.model.BuilderMode
+import com.panko.brewmate.model.FavoriteDrink // 👈 Need this for the dialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,30 +33,50 @@ fun DrinkBuilderScreen(
     viewModel: CoffeeMakerViewModel,
     favoritesViewModel: FavoritesViewModel,
     navController: NavController,
-    mode: BuilderMode = BuilderMode.BREW_NOW // Default to Brew Now
+    mode: BuilderMode = BuilderMode.BREW_NOW,
+    drinkIdToEdit: String? = null // 👈 NEW: Added parameter for Edit Mode
 ) {
     val customSettings by viewModel.customBrewSettings.collectAsState()
     val showSaveDialog = remember { mutableStateOf(false) }
+
+    // 👇 NEW: State to hold the drink we are editing (if any)
+    var favoriteToEdit by remember { mutableStateOf<FavoriteDrink?>(null) }
+
+    // 👇 NEW: When the screen loads, check if we have an ID to edit
+    LaunchedEffect(drinkIdToEdit) {
+        if (drinkIdToEdit != null) {
+            val favoritesList = favoritesViewModel.favoriteDrinks.value
+            val drink = favoritesList.find { it.id == drinkIdToEdit }
+            if (drink != null) {
+                favoriteToEdit = drink
+                // Populate the UI sliders/dropdowns with the saved settings
+                viewModel.updateBrewSettings(drink.settings)
+            }
+        } else if (mode == BuilderMode.RECIPE_DESIGNER) {
+            // Optional: If creating a NEW favorite, you might want to reset to defaults
+            // so they don't accidentally start with the last coffee they brewed.
+            viewModel.updateBrewSettings(BrewSettings.DEFAULT)
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
-            .verticalScroll(rememberScrollState()), // Makes it scrollable
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Design Your Drink", style = MaterialTheme.typography.headlineMedium)
+        // Change title based on mode
+        val titleText = if (drinkIdToEdit != null) "Edit Recipe" else "Design Your Drink"
+        Text(titleText, style = MaterialTheme.typography.headlineMedium)
 
-        // Base Drink Selection
+        // --- Base Drink Selection ---
         Row(modifier = Modifier.fillMaxWidth()) {
             BaseDrinkType.entries.forEach { type ->
                 val isSelected = customSettings.baseType == type
                 FilterChip(
                     selected = isSelected,
-                    onClick = {
-                        // Update the base type in ViewModel
-                        viewModel.updateBrewSettings(customSettings.copy(baseType = type))
-                    },
+                    onClick = { viewModel.updateBrewSettings(customSettings.copy(baseType = type)) },
                     label = { Text(type.name.replace("_", " ")) },
                     modifier = Modifier.padding(end = 8.dp)
                 )
@@ -64,13 +85,11 @@ fun DrinkBuilderScreen(
 
         Divider()
 
-        // Dynamic Sections (depends on base type, like coffee or tea, or whether it has milk or not)
-
+        // --- Dynamic Sections (Coffee, Tea, Chocolate) ---
         when (customSettings.baseType) {
             BaseDrinkType.COFFEE -> {
                 Text("Coffee Settings", style = MaterialTheme.typography.titleMedium)
 
-                // Strength
                 SimpleDropdown(
                     label = "Strength",
                     currentValue = customSettings.strength,
@@ -78,24 +97,20 @@ fun DrinkBuilderScreen(
                     onOptionSelected = { viewModel.setCustomStrength(it) }
                 )
 
-                // Shot Size
                 SimpleDropdown(
                     label = "Shot Size",
                     currentValue = customSettings.coffeeShotSize.displayName,
                     options = CoffeeShotSize.entries.map { it.displayName },
                     onOptionSelected = { selectedName ->
-                        val size = CoffeeShotSize.entries.find {it.displayName == selectedName}
-                                ?: CoffeeShotSize.SINGLE_SHOT
-                            viewModel.setCustomCoffeeShotSize(size) }
+                        val size = CoffeeShotSize.entries.find {it.displayName == selectedName} ?: CoffeeShotSize.SINGLE_SHOT
+                        viewModel.setCustomCoffeeShotSize(size)
+                    }
                 )
 
-                // Decaf Toggle
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
                         checked = customSettings.isDecaf,
-                        onCheckedChange = {
-                            viewModel.updateBrewSettings(customSettings.copy(isDecaf = it))
-                        }
+                        onCheckedChange = { viewModel.updateBrewSettings(customSettings.copy(isDecaf = it)) }
                     )
                     Text("Decaf")
                 }
@@ -104,7 +119,6 @@ fun DrinkBuilderScreen(
             BaseDrinkType.TEA -> {
                 Text("Tea Settings", style = MaterialTheme.typography.titleMedium)
 
-                // Tea Type
                 SimpleDropdown(
                     label = "Tea Type",
                     currentValue = customSettings.teaType.displayName,
@@ -115,14 +129,11 @@ fun DrinkBuilderScreen(
                     }
                 )
 
-                // Steep Time Slider
                 Text("Steep Time: ${customSettings.steepTime} seconds")
                 Slider(
                     value = customSettings.steepTime.toFloat(),
-                    onValueChange = {
-                        viewModel.updateBrewSettings(customSettings.copy(steepTime = it.toLong()))
-                    },
-                    valueRange = 0f..600f, // 1 min to 10 mins
+                    onValueChange = { viewModel.updateBrewSettings(customSettings.copy(steepTime = it.toLong())) },
+                    valueRange = 0f..600f,
                     steps = 18
                 )
             }
@@ -131,37 +142,27 @@ fun DrinkBuilderScreen(
                 Text("Chocolate Settings", style = MaterialTheme.typography.titleMedium)
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-
-                    // Chocolate Type Dropdown
                     Box(modifier = Modifier.weight(1f)) {
                         SimpleDropdown(
                             label = "Chocolate Type",
                             currentValue = customSettings.chocolateType.displayName,
                             options = ChocolateType.entries.map { it.displayName },
                             onOptionSelected = { selectedName ->
-                                val type = ChocolateType.entries.find { it.displayName == selectedName }
-                                    ?: ChocolateType.MILK
+                                val type = ChocolateType.entries.find { it.displayName == selectedName } ?: ChocolateType.MILK
                                 viewModel.updateBrewSettings(customSettings.copy(chocolateType = type))
                             }
                         )
                     }
 
-                    // Quantity Counter (tsp)
                     Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            // Minus Button
                             IconButton(onClick = {
                                 if (customSettings.chocolateTsp > 1)
                                     viewModel.updateBrewSettings(customSettings.copy(chocolateTsp = customSettings.chocolateTsp - 1))
                             }) { Text("-") }
 
-                            // Bold Value Text
-                            Text(
-                                text = "${customSettings.chocolateTsp} tsp",
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("${customSettings.chocolateTsp} tsp", fontWeight = FontWeight.Bold)
 
-                            // Plus Button
                             IconButton(onClick = {
                                 if (customSettings.chocolateTsp < 6)
                                     viewModel.updateBrewSettings(customSettings.copy(chocolateTsp = customSettings.chocolateTsp + 1))
@@ -174,17 +175,15 @@ fun DrinkBuilderScreen(
 
         Divider()
 
-        // Milk Section
+        // --- Milk Section ---
         Text("Milk Customization", style = MaterialTheme.typography.titleMedium)
 
-        // Milk base
         SimpleDropdown(
             label = "Milk Type",
             currentValue = customSettings.milkBase.displayName,
             options = MilkBase.entries.map { it.displayName },
             onOptionSelected = { name ->
                 val base = MilkBase.entries.find { it.displayName == name } ?: MilkBase.WHOLE
-                // Reset style to NONE if user selects NONE for base
                 var newStyle = customSettings.milkStyle
 
                 if (base != MilkBase.NONE && newStyle == MilkStyle.NONE) {
@@ -196,8 +195,7 @@ fun DrinkBuilderScreen(
             }
         )
 
-        // Milk style (Only show if Milk Base is NOT None)
-        if (customSettings.milkBase != MilkBase.NONE) { // Dynamic Visibility
+        if (customSettings.milkBase != MilkBase.NONE) {
             Spacer(modifier = Modifier.height(8.dp))
             SimpleDropdown(
                 label = "Preparation Style",
@@ -212,7 +210,7 @@ fun DrinkBuilderScreen(
 
         Divider()
 
-        // Syrup section
+        // --- Syrup Section ---
         Text("Syrups", style = MaterialTheme.typography.titleMedium)
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -223,25 +221,20 @@ fun DrinkBuilderScreen(
                     options = SyrupType.entries.map { it.displayName },
                     onOptionSelected = { name ->
                         val type = SyrupType.entries.find { it.displayName == name } ?: SyrupType.NONE
-                        // Reset pumps to 0 if NONE is selected
                         val newPumps = if (type == SyrupType.NONE) 0 else 1
                         viewModel.updateBrewSettings(customSettings.copy(syrupType = type, syrupPumps = newPumps))
                     }
                 )
             }
 
-            // Pumps (Only show if Syrup is NOT None)
-            if (customSettings.syrupType != SyrupType.NONE) { // Dynamic Visibility
+            if (customSettings.syrupType != SyrupType.NONE) {
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    // Simple Counter UI
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = {
                             if (customSettings.syrupPumps > 1)
                                 viewModel.updateBrewSettings(customSettings.copy(syrupPumps = customSettings.syrupPumps - 1))
                         }) { Text("-") }
-
                         Text("${customSettings.syrupPumps} Pumps", fontWeight = FontWeight.Bold)
-
                         IconButton(onClick = {
                             viewModel.updateBrewSettings(customSettings.copy(syrupPumps = customSettings.syrupPumps + 1))
                         }) { Text("+") }
@@ -249,9 +242,10 @@ fun DrinkBuilderScreen(
                 }
             }
         }
+
         Divider()
 
-        // Sugar section
+        // --- Sugar Section ---
         Text("Sugar", style = MaterialTheme.typography.titleMedium)
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -261,15 +255,9 @@ fun DrinkBuilderScreen(
                     currentValue = customSettings.sugarType.displayName,
                     options = SugarType.entries.map { it.displayName },
                     onOptionSelected = { name ->
-                        val type =
-                            SugarType.entries.find { it.displayName == name } ?: SugarType.NONE
+                        val type = SugarType.entries.find { it.displayName == name } ?: SugarType.NONE
                         val newSugarAmount = if (type == SugarType.NONE) 0 else 1
-                        viewModel.updateBrewSettings(
-                            customSettings.copy(
-                                sugarType = type,
-                                sugarAmount = newSugarAmount
-                            )
-                        )
+                        viewModel.updateBrewSettings(customSettings.copy(sugarType = type, sugarAmount = newSugarAmount))
                     }
                 )
             }
@@ -289,30 +277,26 @@ fun DrinkBuilderScreen(
                 }
             }
         }
+
         Divider()
 
+        // --- Temperature Section ---
         Text("Drink Temperature", style = MaterialTheme.typography.titleMedium)
-        // Temperature
         SimpleDropdown(
             label = "Temperature",
             currentValue = customSettings.temperature.displayName,
             options = Temperature.entries.map { it.displayName },
             onOptionSelected = { selectedName ->
-                val temperature = Temperature.entries.find {it.displayName == selectedName}
-                    ?: Temperature.HOT
-                viewModel.setCustomTemperature(temperature) }
+                val temperature = Temperature.entries.find {it.displayName == selectedName} ?: Temperature.HOT
+                viewModel.setCustomTemperature(temperature)
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Action buttons
+        // --- Action Buttons ---
         if (mode == BuilderMode.BREW_NOW) {
-            // From home screen, we want to brew coffee now
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Button 1: Just Brew
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
                     modifier = Modifier.weight(1f),
                     onClick = {
@@ -320,42 +304,36 @@ fun DrinkBuilderScreen(
                         viewModel.startBrew(DrinkType.CUSTOM, customSettings, specificName = smartName)
                         navController.popBackStack(BrewMateDestinations.HOME_ROUTE, inclusive = false)
                     }
-                ) {
-                    Text("Brew Once")
-                }
+                ) { Text("Brew Once") }
 
-                // Button 2: Save & Brew
-                Button(
-                    modifier = Modifier.weight(1f),
-                    onClick = { showSaveDialog.value = true }
-                ) {
+                Button(modifier = Modifier.weight(1f), onClick = { showSaveDialog.value = true }) {
                     Text("Save & Brew")
                 }
             }
         } else {
-            // From favorites screen, we want to save the recipe
+            // Recipe Designer Mode (Create OR Edit)
             Button(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = { showSaveDialog.value = true } // Opens dialog, but we change logic below
+                onClick = { showSaveDialog.value = true }
             ) {
-                Text("Save to Favorites")
+                Text(if (drinkIdToEdit != null) "Update Recipe" else "Save to Favorites")
             }
         }
     }
 
-    // Save Favorite Dialog
+    // --- Save/Update Dialog ---
     if (showSaveDialog.value) {
         SaveFavoriteDialog(
             settings = customSettings,
+            existingDrink = favoriteToEdit, // 👈 Pass the existing drink to pre-fill the name
             favoritesViewModel = favoritesViewModel,
+            mode = mode,
             onDismiss = { showSaveDialog.value = false },
             onSaveComplete = { savedName ->
                 if (mode == BuilderMode.BREW_NOW) {
-                    // If brewing, start the machine
                     viewModel.startBrew(DrinkType.CUSTOM, customSettings, specificName = savedName)
                     navController.popBackStack(BrewMateDestinations.HOME_ROUTE, inclusive = false)
                 } else {
-                    // If just designing, go back to Favorites list
                     navController.popBackStack()
                 }
             }
@@ -363,7 +341,7 @@ fun DrinkBuilderScreen(
     }
 }
 
-// Helper composables (dropdowns and such)
+// ... SimpleDropdown stays exactly the same ...
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -388,10 +366,7 @@ fun SimpleDropdown(
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier.menuAnchor().fillMaxWidth()
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
                 DropdownMenuItem(
                     text = { Text(option.lowercase().capitalizeWords()) },
@@ -405,28 +380,33 @@ fun SimpleDropdown(
     }
 }
 
+// 👇 ADDED: mode parameter
 @Composable
 fun SaveFavoriteDialog(
     settings: BrewSettings,
+    existingDrink: FavoriteDrink?,
     favoritesViewModel: FavoritesViewModel,
+    mode: BuilderMode, // 👈 NEW Parameter
     onDismiss: () -> Unit,
     onSaveComplete: (String) -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
+    var name by remember(existingDrink) { mutableStateOf(existingDrink?.name ?: "") }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+
+    val isEditing = existingDrink != null
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Name Your Favorite") },
+        title = { Text(if (isEditing) "Update Favorite" else "Name Your Favorite") },
         text = {
             Column {
-                Text("Enter a name to save this recipe for later:")
+                Text(if (isEditing) "Update the name or settings for this recipe:" else "Enter a name to save this recipe for later:")
                 OutlinedTextField(
                     value = name,
                     onValueChange = {
                         name = it
                         errorMsg = null
-                                    },
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     supportingText = {
@@ -439,16 +419,33 @@ fun SaveFavoriteDialog(
             Button(
                 enabled = name.isNotBlank(),
                 onClick = {
-                    val success = favoritesViewModel.saveFavorite(name, settings)
-                    if (success){
-                        onSaveComplete(name)
-                        onDismiss()
+                    if (isEditing) {
+                        // UPDATE mode
+                        val success = favoritesViewModel.updateFavorite(existingDrink!!.id, name, settings)
+                        if (success) {
+                            onSaveComplete(name)
+                            onDismiss()
+                        } else {
+                            errorMsg = "Another recipe with these settings already exists!"
+                        }
                     } else {
-                        errorMsg = "This recipe already exists!"
+                        // CREATE mode
+                        val success = favoritesViewModel.saveFavorite(name, settings)
+                        if (success){
+                            onSaveComplete(name)
+                            onDismiss()
+                        } else {
+                            errorMsg = "This recipe already exists!"
+                        }
                     }
                 }
             ) {
-                Text("Save & Brew")
+                // 👇 NEW: Dynamic Button Text!
+                Text(
+                    if (isEditing) "Update Recipe"
+                    else if (mode == BuilderMode.BREW_NOW) "Save & Brew"
+                    else "Save Drink"
+                )
             }
         },
         dismissButton = {
@@ -457,5 +454,4 @@ fun SaveFavoriteDialog(
     )
 }
 
-fun String.capitalizeWords(): String =
-    split(" ").joinToString(" ") { it.replaceFirstChar(Char::uppercaseChar) }
+fun String.capitalizeWords(): String = split(" ").joinToString(" ") { it.replaceFirstChar(Char::uppercaseChar) }

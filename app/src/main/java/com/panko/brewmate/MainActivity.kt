@@ -50,27 +50,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Dependency Instantiation
-        val scheduler: Scheduler = SystemScheduler()
-        val inventoryStorage = InventoryStorage(applicationContext)
-        val coffeeMakerRepository: CoffeeMakerRepository = SimulatedCoffeeMaker(scheduler, inventoryStorage)
-        authRepository = FirebaseAuthRepository() // Concrete Firebase instance
-        val authInstance = FirebaseAuth.getInstance()
-        val firestoreInstance: FirebaseFirestore = FirebaseFirestore.getInstance()
-        val androidAlarmScheduler = AndroidAlarmScheduler(applicationContext)
-        val schedulingRepository: SchedulingRepository = FirebaseSchedulingRepository(
-            firestore = firestoreInstance,
-            auth = authInstance,
-            systemScheduler = androidAlarmScheduler
-        )
-        val favoritesRepository: FavoritesRepository = FirebaseFavoritesRepository(
-            firestore = firestoreInstance,
-            auth = authInstance
-        )
-        val historyRepository: HistoryRepository = FirebaseHistoryRepository(
-            firestore = firestoreInstance,
-            auth = authInstance
-        )
+        val app = application as BrewMateApplication
+
+        val coffeeMakerRepository = app.coffeeMakerRepository
+        authRepository = app.authRepository
+        val schedulingRepository = app.schedulingRepository
+        val favoritesRepository = app.favoritesRepository
+        val historyRepository = app.historyRepository
+
         viewModelFactory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return when {
