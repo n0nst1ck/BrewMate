@@ -35,7 +35,6 @@ class InventoryCheckReceiver : BroadcastReceiver() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // 🌟 Let the Repository do the heavy lifting!
                 val missingItems = coffeeMakerRepo.getMissingIngredients(brewSettings)
 
                 if (missingItems.isNotEmpty()) {

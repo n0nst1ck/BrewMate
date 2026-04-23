@@ -78,28 +78,27 @@ fun SchedulingScreen(
     coffeeMakerViewModel: CoffeeMakerViewModel,
     navController: NavController
 ) {
-    // 1. Data from ViewModels
+    // Data from ViewModels
     val schedules by schedulingViewModel.scheduledBrews.collectAsState()
     val favorites by favoritesViewModel.favoriteDrinks.collectAsState()
 
-    // 2. Permission Handling
+    // Permission Handling
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { }
     )
 
-    // 👇 THE KEYBOARD KILLER 🥷
-    // We wait 100ms for the TimeInput to try and grab focus, then we take it away.
+    // Removing focus from the time input
     val focusManager = LocalFocusManager.current
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-        delay(100) // Small delay is the secret!
+        delay(100)
         focusManager.clearFocus()
     }
 
-    // 3. Form State
+    // Form State
     val timeState = rememberTimePickerState(initialHour = 8, initialMinute = 0)
     val recurrenceDays = remember { mutableStateOf(setOf<DayOfWeek>()) }
     val isRecurrent = remember { mutableStateOf(false) }
@@ -118,7 +117,7 @@ fun SchedulingScreen(
             color = MaterialTheme.colorScheme.primary
         )
 
-        // --- LIST OF SCHEDULES ---
+        // List of schedules
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
@@ -143,18 +142,18 @@ fun SchedulingScreen(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        // --- NEW SCHEDULE FORM ---
+        // New schedule form
         Text("New Schedule", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // A. TIME INPUT (RESTORED!)
+        // Time input
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            TimeInput(state = timeState) // 👈 Back to the text boxes you prefer
+            TimeInput(state = timeState)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // B. DRINK SELECTION
+        // Drink selection
         ExposedDropdownMenuBox(
             expanded = isDropdownExpanded,
             onExpandedChange = { isDropdownExpanded = !isDropdownExpanded },
@@ -212,7 +211,7 @@ fun SchedulingScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // C. RECURRENCE TOGGLE
+        // Toggle recurrence
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -229,7 +228,7 @@ fun SchedulingScreen(
             )
         }
 
-        // D. RECURRENCE DAYS
+        // Recurrence days
         if (isRecurrent.value) {
             Spacer(modifier = Modifier.height(8.dp))
             RecurrenceSelector(
@@ -243,7 +242,7 @@ fun SchedulingScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // E. SAVE BUTTON
+        // Save button
         Button(
             modifier = Modifier.fillMaxWidth().height(50.dp),
             enabled = selectedDrinkName != "Select Drink",
@@ -267,7 +266,7 @@ fun SchedulingScreen(
     }
 }
 
-// --- UPGRADED UI COMPONENT ---
+// Ui component helper
 @Composable
 fun BrewScheduleCard(schedule: ScheduledBrew, onDelete: () -> Unit) {
     Card(
@@ -279,7 +278,7 @@ fun BrewScheduleCard(schedule: ScheduledBrew, onDelete: () -> Unit) {
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 1. Time Column
+            // Time Column
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = String.format(Locale.getDefault(), "%02d:%02d", schedule.hour, schedule.minute),
@@ -296,7 +295,7 @@ fun BrewScheduleCard(schedule: ScheduledBrew, onDelete: () -> Unit) {
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // 2. Info Column
+            // Info Column
             Column(modifier = Modifier.weight(1f)) {
                 Text(schedule.drinkName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
 
@@ -313,7 +312,7 @@ fun BrewScheduleCard(schedule: ScheduledBrew, onDelete: () -> Unit) {
                 }
             }
 
-            // 3. Delete Action
+            // Delete Action
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Default.Delete,

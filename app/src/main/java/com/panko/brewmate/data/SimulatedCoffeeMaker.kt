@@ -30,7 +30,7 @@ class SimulatedCoffeeMaker(
     private val storage: InventoryStorage
 ) : CoffeeMakerRepository {
 
-    // --- State & Inventory Flows ---
+    // State & Inventory Flows
     private val _coffeeMakerState = MutableStateFlow(CoffeeMakerState(
         isPoweredOn = false,
         status = "Off",
@@ -93,7 +93,7 @@ class SimulatedCoffeeMaker(
     override suspend fun getMissingIngredients(settings: BrewSettings): List<String> {
         val missing = mutableListOf<String>()
 
-        // 1. Calculate Needs (Exactly the same as startBrew)
+        // Calculate Needs (Exactly the same as startBrew)
         val waterNeeded = 15
         val beansNeeded = if (settings.baseType == BaseDrinkType.COFFEE) 10 else 0
         val groundsSpaceNeeded = if (settings.baseType == BaseDrinkType.COFFEE) 5 else 0
@@ -103,7 +103,7 @@ class SimulatedCoffeeMaker(
         val syrupNeeded = if (settings.syrupType != SyrupType.NONE) settings.syrupPumps * 5 else 0
         val sugarNeeded = if (settings.sugarType != SugarType.NONE) settings.sugarAmount * 5 else 0
 
-        // 2. Check actual storage safely (using .first() waits for the database to load!)
+        // Check actual storage safely (using .first() waits for the database to load)
         if (storage.waterLevel.first() < waterNeeded) missing.add("Water")
 
         if (beansNeeded > 0 && storage.beansLevel.first() < beansNeeded) missing.add("Coffee Beans")
@@ -195,7 +195,7 @@ class SimulatedCoffeeMaker(
         }
     }
 
-    // --- Actions ---
+    // Actions
 
     override fun togglePower() {
         _coffeeMakerState.update { currentState ->
@@ -214,7 +214,7 @@ class SimulatedCoffeeMaker(
     }
 
     override fun startBrew(drinkType: DrinkType, customSettings: BrewSettings?, drinkName: String?): Boolean {
-        // --- 1. GENERAL CHECKS ---
+        // General Checks
         if (!_coffeeMakerState.value.isPoweredOn) {
             _coffeeMakerState.update { it.copy(detailedMessage = "Error: Coffee maker is off.") }
             return false
@@ -228,7 +228,7 @@ class SimulatedCoffeeMaker(
             return false
         }
 
-        // --- 2. DEFINE REQUIREMENTS ---
+        // Define Requirements
         val effectiveSettings = if (customSettings != null) {
             customSettings
         } else if (drinkType == DrinkType.CUSTOM) {
@@ -264,9 +264,9 @@ class SimulatedCoffeeMaker(
         val sugarNeeded =
             if (effectiveSettings.sugarType != SugarType.NONE) effectiveSettings.sugarAmount * 5 else 0
 
-        // --- 3. CHECK INVENTORY ---
+        // Check Inventory
 
-        // A. Water
+        // Water
         if (_waterLevel.value < waterNeeded) {
             _coffeeMakerState.update {
                 it.copy(
@@ -278,7 +278,7 @@ class SimulatedCoffeeMaker(
             return false
         }
 
-        // B. Beans
+        // Beans
         if (beansNeeded > 0 && _beansLevel.value < beansNeeded) {
             _coffeeMakerState.update {
                 it.copy(
@@ -290,7 +290,7 @@ class SimulatedCoffeeMaker(
             return false
         }
 
-        // C. Grounds Bin
+        // Grounds Bin
         if (groundsSpaceNeeded > 0 && _groundsBinLevel.value >= (100 - groundsSpaceNeeded)) {
             _coffeeMakerState.update {
                 it.copy(
@@ -302,7 +302,7 @@ class SimulatedCoffeeMaker(
             return false
         }
 
-        // D. Milk
+        // Milk
         if (milkNeeded > 0) {
             val currentMilk = _milkLevels.value[effectiveSettings.milkBase] ?: 0
             if (currentMilk < milkNeeded) {
@@ -317,7 +317,7 @@ class SimulatedCoffeeMaker(
             }
         }
 
-        // E. Tea
+        // Tea
         if (teaNeeded > 0) {
             val currentTea = _teaLevels.value[effectiveSettings.teaType] ?: 0
             if (currentTea < teaNeeded) {
@@ -332,7 +332,7 @@ class SimulatedCoffeeMaker(
             }
         }
 
-        // F. Chocolate
+        // Chocolate
         if (chocolateNeeded > 0) {
             val currentChoco = _chocolateLevels.value[effectiveSettings.chocolateType] ?: 0
             if (currentChoco < chocolateNeeded) {
@@ -347,7 +347,7 @@ class SimulatedCoffeeMaker(
             }
         }
 
-        // G. Syrup
+        // Syrup
         if (syrupNeeded > 0) {
             val currentSyrup = _syrupLevels.value[effectiveSettings.syrupType] ?: 0
             if (currentSyrup < syrupNeeded) {
@@ -362,7 +362,7 @@ class SimulatedCoffeeMaker(
             }
         }
 
-        // H. Sugar
+        // Sugar
         if (sugarNeeded > 0) {
             val currentSugar = _sugarLevels.value[effectiveSettings.sugarType] ?: 0
             if (currentSugar < sugarNeeded) {
@@ -429,7 +429,7 @@ class SimulatedCoffeeMaker(
 
     }
 
-        // --- 5. START THE PROCESS ---
+        // Start the process of brewing drink
         val displayName = drinkName ?: if (drinkType == DrinkType.CUSTOM) {
             "Custom ${effectiveSettings.baseType.name.lowercase().capitalize()}"
         } else {
@@ -544,7 +544,6 @@ class SimulatedCoffeeMaker(
         clearErrorIfMatches("ERROR_MILK_LOW")
     }
 
-    // ... Implement refillSyrup, refillTea, etc. similarly ...
     override fun refillSyrup(type: SyrupType) {
         CoroutineScope(Dispatchers.IO).launch { storage.saveItemLevel(storage.getSyrupKey(type), 100) }
         clearErrorIfMatches("ERROR_SYRUP_LOW")
@@ -595,7 +594,7 @@ class SimulatedCoffeeMaker(
     private fun getBrewSteps(settings: BrewSettings): List<BrewStep> {
         val steps = mutableListOf<BrewStep>()
 
-        // 1. PREPARATION
+        // Preparation
         when (settings.baseType) {
             BaseDrinkType.COFFEE -> {
                 steps.add(BrewStep("Grinding beans (${settings.coffeeShotSize.displayName})...", 2500))
@@ -614,20 +613,19 @@ class SimulatedCoffeeMaker(
             BaseDrinkType.CHOCOLATE -> {
                 val liquidName = if (settings.milkBase == MilkBase.NONE) "water" else settings.milkBase.displayName
                 steps.add(BrewStep("Heating $liquidName to 80°C...", 4000))
-                // Note: Using chocolateTsp here!
                 steps.add(BrewStep("Mixing ${settings.chocolateTsp} tsp of ${settings.chocolateType.displayName}...", 3000))
                 steps.add(BrewStep("Pouring creamy chocolate...", 3000))
             }
         }
 
-        // 2. BREWING / POURING
+        // Brewing / Pouring
         if (settings.baseType == BaseDrinkType.COFFEE) {
             steps.add(BrewStep("Extracting espresso...", 3000))
         } else if (settings.baseType == BaseDrinkType.TEA) {
             steps.add(BrewStep("Pouring tea...", 1500))
         }
 
-        // 3. MILK
+        // Milk
         if (settings.milkBase != MilkBase.NONE && settings.baseType != BaseDrinkType.CHOCOLATE) {
             val milkName = settings.milkBase.displayName
             // We execute specific steps based on the type.
@@ -652,7 +650,7 @@ class SimulatedCoffeeMaker(
                 }
 
                 // Scenario D: Warm (Warm -> Pour)
-                // This covers Warm Milk or Kids' Temp drinks
+                // This covers Warm Milk or other drinks
                 settings.milkStyle == MilkStyle.WARM -> {
                     steps.add(BrewStep("Gently Warming $milkName...", 2500))
                     steps.add(BrewStep("Pouring Warm $milkName...", 1500))
@@ -660,7 +658,7 @@ class SimulatedCoffeeMaker(
             }
         }
 
-        // 4. FLAVORINGS
+        // Flavoring
         if (settings.syrupType != SyrupType.NONE) {
             steps.add(BrewStep("Adding ${settings.syrupPumps} pumps of ${settings.syrupType.displayName}...", 1500))
         }

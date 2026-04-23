@@ -215,7 +215,7 @@ fun MainAppScaffold(
                     favoritesViewModel = favoritesViewModel,
                     navController = navController,
                     mode = BuilderMode.RECIPE_DESIGNER,
-                    drinkIdToEdit = drinkId // 👈 Pass the ID so the builder knows what to load
+                    drinkIdToEdit = drinkId // Pass the ID so the builder knows what to load
                 )
             }
 

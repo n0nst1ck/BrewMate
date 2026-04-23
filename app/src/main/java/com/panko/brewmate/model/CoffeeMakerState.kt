@@ -7,5 +7,5 @@ data class CoffeeMakerState(
     val detailedMessage: String,
     val canBrewDrink: Boolean,
     val canStopBrew: Boolean,
-    val hasMaintenanceAlert: Boolean // New flag for UI convenience
+    val hasMaintenanceAlert: Boolean
 )

@@ -21,7 +21,7 @@ class AndroidAlarmScheduler(
 
     @SuppressLint("ScheduleExactAlarm")
     override fun schedule(brew: ScheduledBrew): Boolean {
-        // 1. Create the Intent to trigger our Receiver
+        // Create intent to trigger receiver
         val intent = Intent(context, BrewAlarmReceiver::class.java).apply {
             putExtra("DRINK_NAME", brew.drinkName)
             putExtra("BREW_ID", brew.id)
@@ -31,7 +31,7 @@ class AndroidAlarmScheduler(
             putExtra("BREW_SETTINGS", brew.brewSettings)
         }
 
-        // 2. Create PendingIntent
+        // Create PendingIntent
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             brew.id.hashCode(),
@@ -39,7 +39,7 @@ class AndroidAlarmScheduler(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // 3. Calculate Time
+        // Calculate Time
         val now = LocalDateTime.now()
         var alarmTime = now.withHour(brew.hour).withMinute(brew.minute).withSecond(0)
 
@@ -49,7 +49,7 @@ class AndroidAlarmScheduler(
 
         val triggerAtMillis = alarmTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-        // 4. Set the Main Alarm
+        // Set the Main Alarm
         val success = try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (alarmManager.canScheduleExactAlarms()) {
@@ -68,7 +68,7 @@ class AndroidAlarmScheduler(
             false
         }
 
-        // 👇 NEW: 5. Set the 12-Hour Inventory Check Alarm
+        // Set 12-Hour Inventory Check Alarm
         if (success) {
             var checkTime = alarmTime.minusHours(12)
 
@@ -116,7 +116,7 @@ class AndroidAlarmScheduler(
             )
             alarmManager.cancel(pendingIntent)
 
-            // 👇 NEW: Cancel the check alarm too!
+            // Cancel the inventory check alarm
             val checkIntent = Intent(context, InventoryCheckReceiver::class.java)
             val checkPendingIntent = PendingIntent.getBroadcast(
                 context,

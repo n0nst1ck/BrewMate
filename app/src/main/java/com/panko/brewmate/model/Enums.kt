@@ -66,7 +66,7 @@ enum class ChocolateType(val displayName: String) {
     WHITE("White Chocolate")
 }
 
-// Used for the Brew Customization screen, to know which buttons to show on the bottom!
+// Used for the Brew Customization screen, to know which buttons to show on the bottom
 enum class BuilderMode {
     BREW_NOW,       // from home screen, user wants to brew coffee now
     RECIPE_DESIGNER // from favorites, user wants to just save a recipe

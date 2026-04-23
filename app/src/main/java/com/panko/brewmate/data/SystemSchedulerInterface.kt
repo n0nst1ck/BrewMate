@@ -1,8 +1,6 @@
 package com.panko.brewmate.data
 import com.panko.brewmate.model.ScheduledBrew
 
-// In data/SystemSchedulerInterface.kt (or similar location)
-
 interface SystemSchedulerInterface {
     /**
      * Sets an alarm with the Android OS to trigger a broadcast receiver.

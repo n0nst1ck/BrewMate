@@ -38,7 +38,7 @@ fun InventoryScreen(viewModel: CoffeeMakerViewModel) {
             Text("Inventory Management", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         }
 
-        // --- SECTION 1: ESSENTIALS ---
+        // 1st Section: Essentials
         item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -52,27 +52,27 @@ fun InventoryScreen(viewModel: CoffeeMakerViewModel) {
             }
         }
 
-        // --- SECTION 2: TEAS ---
+        // 2nd Section: Teas
         item {
             InventorySection(title = "Tea Selection", items = teas, onRefill = { viewModel.refillTea(it) })
         }
 
-        // --- SECTION 3: MILKS ---
+        // 3rd Section: Milks
         item {
             InventorySection(title = "Milk Fridge", items = milks, onRefill = { viewModel.refillMilk(it) })
         }
 
-        // --- SECTION 4: CHOCOLATES ---
+        // 4th Section: Chocolates
         item {
             InventorySection(title = "Chocolates", items = chocolates, onRefill = { viewModel.refillChocolate(it) })
         }
 
-        // --- SECTION 5: SYRUPS ---
+        // 5th Section: Syrups
         item {
             InventorySection(title = "Syrups & Flavors", items = syrups, onRefill = { viewModel.refillSyrup(it) })
         }
 
-        // --- SECTION 6: SUGARS ---
+        // 6th Section: Sugars
         item {
             InventorySection(title = "Sugars & Sweeteners", items = sugars, onRefill = { viewModel.refillSugar(it) })
         }
@@ -81,7 +81,7 @@ fun InventoryScreen(viewModel: CoffeeMakerViewModel) {
     }
 }
 
-// --- HELPER 1: Generic Section for Maps ---
+// Helper for map section
 @Composable
 fun <T> InventorySection(
     title: String,
@@ -104,7 +104,7 @@ fun <T> InventorySection(
     }
 }
 
-// --- HELPER 2: Single Row Indicator ---
+// Helper for single row
 @Composable
 fun LevelIndicator(
     label: String,

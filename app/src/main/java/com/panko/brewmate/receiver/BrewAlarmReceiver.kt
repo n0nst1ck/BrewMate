@@ -37,10 +37,10 @@ class BrewAlarmReceiver : BroadcastReceiver() {
             intent.getSerializableExtra("BREW_SETTINGS") as? BrewSettings
         } ?: BrewSettings.DEFAULT
 
-        // 🔔 Tell the user the coffee is making!
+        // Tell the user the coffee is being made
         showNotification(context, drinkName)
 
-        // 🌟 GET THE REPOSITORIES FROM THE APP 🌟
+        // Get repos from app
         val app = context.applicationContext as BrewMateApplication
         val coffeeMakerRepo = app.coffeeMakerRepository
         val historyRepo = app.historyRepository
@@ -50,21 +50,21 @@ class BrewAlarmReceiver : BroadcastReceiver() {
 
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    // 1. Turn on machine if off
+                    // Turn on machine if off
                     val currentState = coffeeMakerRepo.coffeeMakerState.value
                     if (!currentState.isPoweredOn) {
                         coffeeMakerRepo.togglePower()
                         delay(1500) // Wait for boot up
                     }
 
-                    // 2. START THE BREW! (Fixed parameter to specificName)
+                    // Start brew
                     val isBrewing = coffeeMakerRepo.startBrew(
                         drinkType = DrinkType.CUSTOM,
                         customSettings = brewSettings,
                         drinkName = drinkName
                     )
 
-                    // 3. Add to History!
+                    // Add to history
                     if (isBrewing) {
                         val historyItem = BrewHistoryItem(
                             userId = userId,
@@ -75,7 +75,7 @@ class BrewAlarmReceiver : BroadcastReceiver() {
                         historyRepo.addHistoryItem(historyItem)
                     }
 
-                    // 4. CLEANUP: Delete one-time schedules from Firestore
+                    // Delete one-time schedules from Firestore
                     if (scheduleId != null && !isRecurrent) {
                         Firebase.firestore.collection("users").document(userId)
                             .collection("schedules").document(scheduleId)
@@ -92,7 +92,7 @@ class BrewAlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    // --- The Notification Function ---
+    // The Notification Function
     private fun showNotification(context: Context, drinkName: String) {
         val channelId = "brew_alarm_channel"
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

@@ -25,7 +25,7 @@ import com.panko.brewmate.navigation.BrewMateDestinations
 import com.panko.brewmate.viewmodel.CoffeeMakerViewModel
 import com.panko.brewmate.viewmodel.FavoritesViewModel
 import com.panko.brewmate.model.BuilderMode
-import com.panko.brewmate.model.FavoriteDrink // 👈 Need this for the dialog
+import com.panko.brewmate.model.FavoriteDrink
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,15 +34,15 @@ fun DrinkBuilderScreen(
     favoritesViewModel: FavoritesViewModel,
     navController: NavController,
     mode: BuilderMode = BuilderMode.BREW_NOW,
-    drinkIdToEdit: String? = null // 👈 NEW: Added parameter for Edit Mode
+    drinkIdToEdit: String? = null //
 ) {
     val customSettings by viewModel.customBrewSettings.collectAsState()
     val showSaveDialog = remember { mutableStateOf(false) }
 
-    // 👇 NEW: State to hold the drink we are editing (if any)
+    // State to hold the drink we are editing (if any)
     var favoriteToEdit by remember { mutableStateOf<FavoriteDrink?>(null) }
 
-    // 👇 NEW: When the screen loads, check if we have an ID to edit
+    // When the screen loads, check if we have an ID to edit
     LaunchedEffect(drinkIdToEdit) {
         if (drinkIdToEdit != null) {
             val favoritesList = favoritesViewModel.favoriteDrinks.value
@@ -53,8 +53,7 @@ fun DrinkBuilderScreen(
                 viewModel.updateBrewSettings(drink.settings)
             }
         } else if (mode == BuilderMode.RECIPE_DESIGNER) {
-            // Optional: If creating a NEW favorite, you might want to reset to defaults
-            // so they don't accidentally start with the last coffee they brewed.
+            // If creating a NEW favorite, reset to defaults so they don't accidentally start with the last coffee they brewed.
             viewModel.updateBrewSettings(BrewSettings.DEFAULT)
         }
     }
@@ -70,7 +69,7 @@ fun DrinkBuilderScreen(
         val titleText = if (drinkIdToEdit != null) "Edit Recipe" else "Design Your Drink"
         Text(titleText, style = MaterialTheme.typography.headlineMedium)
 
-        // --- Base Drink Selection ---
+        // Base Drink Selection
         Row(modifier = Modifier.fillMaxWidth()) {
             BaseDrinkType.entries.forEach { type ->
                 val isSelected = customSettings.baseType == type
@@ -85,7 +84,7 @@ fun DrinkBuilderScreen(
 
         Divider()
 
-        // --- Dynamic Sections (Coffee, Tea, Chocolate) ---
+        // Dynamic Sections (Coffee, Tea, Chocolate)
         when (customSettings.baseType) {
             BaseDrinkType.COFFEE -> {
                 Text("Coffee Settings", style = MaterialTheme.typography.titleMedium)
@@ -175,7 +174,7 @@ fun DrinkBuilderScreen(
 
         Divider()
 
-        // --- Milk Section ---
+        // Milk Section
         Text("Milk Customization", style = MaterialTheme.typography.titleMedium)
 
         SimpleDropdown(
@@ -210,7 +209,7 @@ fun DrinkBuilderScreen(
 
         Divider()
 
-        // --- Syrup Section ---
+        // Syrup Section
         Text("Syrups", style = MaterialTheme.typography.titleMedium)
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -245,7 +244,7 @@ fun DrinkBuilderScreen(
 
         Divider()
 
-        // --- Sugar Section ---
+        // Sugar Section
         Text("Sugar", style = MaterialTheme.typography.titleMedium)
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -280,7 +279,7 @@ fun DrinkBuilderScreen(
 
         Divider()
 
-        // --- Temperature Section ---
+        // Temperature Section
         Text("Drink Temperature", style = MaterialTheme.typography.titleMedium)
         SimpleDropdown(
             label = "Temperature",
@@ -294,7 +293,7 @@ fun DrinkBuilderScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- Action Buttons ---
+        // Action Buttons
         if (mode == BuilderMode.BREW_NOW) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
@@ -321,11 +320,11 @@ fun DrinkBuilderScreen(
         }
     }
 
-    // --- Save/Update Dialog ---
+    // Save/Update Dialog
     if (showSaveDialog.value) {
         SaveFavoriteDialog(
             settings = customSettings,
-            existingDrink = favoriteToEdit, // 👈 Pass the existing drink to pre-fill the name
+            existingDrink = favoriteToEdit, // Pass the existing drink to pre-fill the name
             favoritesViewModel = favoritesViewModel,
             mode = mode,
             onDismiss = { showSaveDialog.value = false },
@@ -340,8 +339,6 @@ fun DrinkBuilderScreen(
         )
     }
 }
-
-// ... SimpleDropdown stays exactly the same ...
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -380,13 +377,12 @@ fun SimpleDropdown(
     }
 }
 
-// 👇 ADDED: mode parameter
 @Composable
 fun SaveFavoriteDialog(
     settings: BrewSettings,
     existingDrink: FavoriteDrink?,
     favoritesViewModel: FavoritesViewModel,
-    mode: BuilderMode, // 👈 NEW Parameter
+    mode: BuilderMode, // Mode Parameter
     onDismiss: () -> Unit,
     onSaveComplete: (String) -> Unit
 ) {
@@ -440,7 +436,7 @@ fun SaveFavoriteDialog(
                     }
                 }
             ) {
-                // 👇 NEW: Dynamic Button Text!
+                // Dynamic Button Text based on mode
                 Text(
                     if (isEditing) "Update Recipe"
                     else if (mode == BuilderMode.BREW_NOW) "Save & Brew"

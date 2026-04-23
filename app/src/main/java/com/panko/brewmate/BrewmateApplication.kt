@@ -19,16 +19,16 @@ class BrewMateApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // 1. Core utilities
+        // Core utilities
         val scheduler: Scheduler = SystemScheduler()
         val androidAlarmScheduler = AndroidAlarmScheduler(this)
 
         inventoryStorage = InventoryStorage(this)
-        // 2. Firebase Instances
+        // Firebase Instances
         val authInstance = FirebaseAuth.getInstance()
         val firestoreInstance = FirebaseFirestore.getInstance()
 
-        // 3. Instantiate Repositories (Exactly as you had them!)
+        // Instantiate Repositories
         coffeeMakerRepository = SimulatedCoffeeMaker(scheduler, inventoryStorage)
         authRepository = FirebaseAuthRepository()
 

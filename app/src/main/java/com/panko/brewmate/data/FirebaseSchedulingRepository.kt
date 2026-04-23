@@ -1,5 +1,3 @@
-// File: data/FirebaseSchedulingRepository.kt
-
 package com.panko.brewmate.data
 
 import android.util.Log
@@ -18,9 +16,6 @@ import com.panko.brewmate.data.SystemSchedulerInterface
 import java.time.DayOfWeek
 import java.util.UUID
 
-// Assuming SystemSchedulerInterface is defined elsewhere
-// Assuming SchedulingRepository is defined as the interface this class implements
-
 class FirebaseSchedulingRepository(
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth,
@@ -33,13 +28,11 @@ class FirebaseSchedulingRepository(
             .document(auth.currentUser?.uid ?: "guest_user_if_allowed")
             .collection("schedules")
 
-    // --- Implementation of SchedulingRepository methods ---
-
-    // In data/FirebaseSchedulingRepository.kt
+    // Implementation of SchedulingRepository methods
 
     override suspend fun scheduleBrew(brew: ScheduledBrew): Result<Boolean> {
         return try {
-            // 1. ⚡ ACTION: Set the Android Alarm IMMEDIATELY
+            // Set the Android Alarm
             // (We do this first so it works even if offline)
             val alarmSet = systemScheduler.schedule(brew)
 
@@ -49,7 +42,7 @@ class FirebaseSchedulingRepository(
                 Log.e("DEBUG_BREW", "❌ ALARM FAILED to set on Phone")
             }
 
-            // 2. ☁️ ACTION: Save to Cloud
+            // Save to Cloud
             // Even if this fails or hangs due to bad internet, the alarm is already set!
             firestore.collection("users")
                 .document(brew.userID)
@@ -72,28 +65,28 @@ class FirebaseSchedulingRepository(
             .collection("schedules")
 
     override fun getScheduledBrews(userId: String): Flow<List<ScheduledBrew>> = callbackFlow {
-        // 1. Create a listener for Firestore data changes
+        // Create a listener for Firestore data changes
         val subscription = getScheduleCollection(userId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    // 2. If an error occurs, send it down the Flow and close the channel.
+                    // If an error occurs, send it down the Flow and close the channel
                     close(error)
                     return@addSnapshotListener
                 }
 
                 if (snapshot != null) {
-                    // 3. Convert the documents to a List of ScheduledBrew objects
+                    // Convert the documents to a List of ScheduledBrew objects
                     val brews = snapshot.documents.mapNotNull { document ->
                         // Firestore's toObject function handles data class mapping
                         document.toObject(ScheduledBrew::class.java)
                     }
 
-                    // 4. Send the new list of brews to the Flow consumer (your ViewModel/UI)
+                    // Send the new list of brews to the Flow consumer (your ViewModel/UI)
                     trySend(brews)
                 }
             }
 
-        // 5. This block is executed when the Flow consumer cancels (e.g., when the ViewModel is cleared).
+        // This block is executed when the Flow consumer cancels.
         // It is crucial for preventing memory leaks by removing the Firestore listener.
         awaitClose {
             subscription.remove()

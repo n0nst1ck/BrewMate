@@ -163,7 +163,7 @@ fun SaveHistoryAsFavoriteDialog(
             Button(
                 enabled = name.isNotBlank(),
                 onClick = {
-                    // Check the boolean return value!
+                    // Check the boolean return value
                     val success = favoritesViewModel.saveFavorite(name, item.settings)
 
                     if (success) {

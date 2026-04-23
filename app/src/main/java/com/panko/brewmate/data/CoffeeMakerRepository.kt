@@ -16,12 +16,12 @@ import com.panko.brewmate.model.TeaType
 
 // Interface for interacting with the coffee maker
 interface CoffeeMakerRepository {
-    // --- Device Status and General Info ---
+    // Device Status and General Info
     val coffeeMakerState: StateFlow<CoffeeMakerState> // Combines status, message, power, canBrew/Stop
     val selectedDrinkType: StateFlow<DrinkType> // The currently selected preset type
     val customBrewSettings: StateFlow<BrewSettings> // The detailed custom settings
 
-    // --- Levels ---
+    // Levels
     val beansLevel: StateFlow<Int>
     val waterLevel: StateFlow<Int>
     val groundsBinLevel: StateFlow<Int>
@@ -32,11 +32,11 @@ interface CoffeeMakerRepository {
     val teaLevels: StateFlow<Map<TeaType, Int>>
     val chocolateLevels: StateFlow<Map<ChocolateType, Int>>
 
-    // --- Commands ---
+    // Commands
     fun togglePower()
     fun startBrew(drinkType: DrinkType, customSettings: BrewSettings?, drinkName: String? = null): Boolean
     fun stopBrew()
-    fun setSelectedCoffeeType(type: DrinkType) // To set the main coffee type (e.g., Espresso, Latte)
+    fun setSelectedCoffeeType(type: DrinkType)
     fun setCustomStrength(strength: String)
     fun setCustomCoffeeShotSize(size: CoffeeShotSize)
     fun setCustomMilkType(milkStyle: MilkStyle)

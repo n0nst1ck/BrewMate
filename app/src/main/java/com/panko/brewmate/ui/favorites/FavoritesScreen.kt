@@ -61,7 +61,7 @@ fun FavoritesScreen(
             )
 
             if (favoriteDrinks.isEmpty()) {
-                // --- Empty State ---
+                // Empty State
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -87,7 +87,7 @@ fun FavoritesScreen(
                     )
                 }
             } else {
-                // --- Non-Empty List ---
+                // Non-Empty List
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -102,11 +102,8 @@ fun FavoritesScreen(
                                     popUpTo(BrewMateDestinations.HOME_ROUTE) { inclusive = true }
                                 }
                             },
-                            // 👇 NEW: Pass the edit action down to the card
+                            // Pass the edit action down to the card
                             onEdit = {
-                                // Assuming your NavGraph is set up to accept an ID for editing.
-                                // If you handle passing data via a ViewModel instead, you'd call
-                                // viewModel.setDrinkToEdit(drink) here before navigating.
                                 navController.navigate("${BrewMateDestinations.CREATE_FAVORITE_ROUTE}/${drink.id}")
                             }
                         )
@@ -117,17 +114,16 @@ fun FavoritesScreen(
     }
 }
 
-// 👇 NEW: Added 'onClick' behavior to the Card and 'onEdit' to the parameters
-@OptIn(ExperimentalMaterial3Api::class) // Required for clickable Card in some Material3 versions
+@OptIn(ExperimentalMaterial3Api::class) // Required for clickable Card
 @Composable
 fun FavoriteDrinkCard(
     drink: FavoriteDrink,
     onDelete: () -> Unit,
     onBrew: () -> Unit,
-    onEdit: () -> Unit // 👈 Added parameter
+    onEdit: () -> Unit
 ) {
     Card(
-        onClick = onEdit, // 👈 This makes the entire card clickable with a nice ripple effect!
+        onClick = onEdit, // This makes the entire card clickable with a nice ripple effect :)
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -161,7 +157,7 @@ fun FavoriteDrinkCard(
             // Right: Actions (Brew & Delete)
             Row(verticalAlignment = Alignment.CenterVertically) {
 
-                // 1. Brew Button (Play)
+                // Brew Button (Play)
                 FilledTonalButton(
                     onClick = { onBrew() },
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
@@ -174,7 +170,7 @@ fun FavoriteDrinkCard(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // 2. Delete Button
+                // Delete Button
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Filled.Delete,
