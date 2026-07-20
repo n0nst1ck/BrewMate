@@ -3,6 +3,6 @@ It took a lot of effort and care, and I had lots of fun and learned a lot making
 I also used it as a way to learn Kotlin, as we didn't learn it during our studies but I didn't want to make an android application in Java.
 
 I decided to make a coffee machine app, because of my dad and his love for coffee :)
-It functions with firebase, although by now the firebase database is probably offline.
+It functions with firebase, and has a lot of features, such as favorites, history, coffee scheduling, and light and dark theme.
 
 Thank you for checking it out :)
