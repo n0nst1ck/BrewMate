@@ -13,7 +13,7 @@ data class BrewSettings(
 
     // Tea Specifics
     val teaType: TeaType = TeaType.BLACK,
-    val steepTime: Long = 180, // Default 3 mins (in seconds)
+    val steepTime: Long = 180, // Default 3 mins
 
     // Chocolate Specifics
     val chocolateType: ChocolateType = ChocolateType.MILK,
@@ -29,8 +29,8 @@ data class BrewSettings(
     val syrupPumps: Int = 0,
 
     // Sugars
-    val sugarType: SugarType = SugarType.NONE, // NEW: Type of sugar
-    val sugarAmount: Int = 0 // Teaspoons/Packets
+    val sugarType: SugarType = SugarType.NONE, // Type of sugar
+    val sugarAmount: Int = 0 // Teaspoons
 ) : Serializable {
     companion object {
         val DEFAULT = BrewSettings()
