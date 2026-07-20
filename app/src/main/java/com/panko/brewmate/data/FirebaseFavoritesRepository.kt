@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlin.Result // Using standard Kotlin Result
+import kotlin.Result
 
 class FirebaseFavoritesRepository(
     private val firestore: FirebaseFirestore,
@@ -53,8 +53,8 @@ class FirebaseFavoritesRepository(
     override suspend fun updateFavorite(drink: FavoriteDrink) {
         try {
             firestore.collection("users").document(drink.userId)
-                .collection("favorites").document(drink.id) // 👈 Use the exact same ID
-                .set(drink) // 👈 .set() completely overwrites the old data
+                .collection("favorites").document(drink.id) // Use the same ID
+                .set(drink) // .set() completely overwrites the old data
                 .await()
         } catch (e: Exception) {
             e.printStackTrace()
