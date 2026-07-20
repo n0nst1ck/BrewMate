@@ -6,9 +6,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.tasks.await // Don't forget this!
+import kotlinx.coroutines.tasks.await
 
-// Import your custom models
 import com.panko.brewmate.model.ScheduledBrew
 import com.panko.brewmate.data.SchedulingRepository
 import com.panko.brewmate.data.AndroidAlarmScheduler
@@ -19,7 +18,7 @@ import java.util.UUID
 class FirebaseSchedulingRepository(
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth,
-    private val systemScheduler: SystemSchedulerInterface // The AndroidAlarmScheduler implementation
+    private val systemScheduler: SystemSchedulerInterface
 ) : SchedulingRepository {
 
     // Helper to get the current user's document path
@@ -36,14 +35,7 @@ class FirebaseSchedulingRepository(
             // (We do this first so it works even if offline)
             val alarmSet = systemScheduler.schedule(brew)
 
-            if (alarmSet) {
-                Log.d("DEBUG_BREW", "✅ ALARM SET on Phone (Offline Mode Ready)")
-            } else {
-                Log.e("DEBUG_BREW", "❌ ALARM FAILED to set on Phone")
-            }
-
             // Save to Cloud
-            // Even if this fails or hangs due to bad internet, the alarm is already set!
             firestore.collection("users")
                 .document(brew.userID)
                 .collection("schedules")
@@ -53,15 +45,13 @@ class FirebaseSchedulingRepository(
 
             Result.success(true)
         } catch (e: Exception) {
-            // Log the network error, but the alarm is still set locally!
-            Log.e("DEBUG_BREW", "⚠️ Saved to local alarm, but Cloud Sync failed", e)
             Result.failure(e)
         }
     }
 
     private fun getScheduleCollection(userId: String) =
         firestore.collection("users")
-            .document(userId) // The collection path is specific to the user
+            .document(userId)
             .collection("schedules")
 
     override fun getScheduledBrews(userId: String): Flow<List<ScheduledBrew>> = callbackFlow {
